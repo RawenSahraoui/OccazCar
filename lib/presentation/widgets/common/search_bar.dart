@@ -5,10 +5,10 @@ class VehicleSearchBar extends StatelessWidget {
   final Function(String) onSearchChanged;
 
   const VehicleSearchBar({
-    Key? key,
+    super.key,
     this.searchQuery,
     required this.onSearchChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

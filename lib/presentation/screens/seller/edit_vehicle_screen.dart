@@ -183,7 +183,7 @@ Future<void> _saveChanges() async {
 
             // Ville
             DropdownButtonFormField<String>(
-              value: _selectedCity,
+              initialValue: _selectedCity,
               decoration: const InputDecoration(
                 labelText: 'Ville',
                 prefixIcon: Icon(Icons.location_city),

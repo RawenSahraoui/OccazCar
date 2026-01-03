@@ -7,7 +7,7 @@ import '../../providers/vehicle_provider.dart';
 import '../../widgets/common/vehicle_card.dart';
 
 class VehiclesListScreen extends ConsumerStatefulWidget {
-  const VehiclesListScreen({Key? key}) : super(key: key);
+  const VehiclesListScreen({super.key});
 
   @override
   ConsumerState<VehiclesListScreen> createState() => _VehiclesListScreenState();

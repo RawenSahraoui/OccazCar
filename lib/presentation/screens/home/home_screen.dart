@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/vehicle_provider.dart';
 import '../buyer/vehicles_list_screen.dart';
 import '../seller/seller_dashboard_screen.dart';
 import '../buyer/search_screen.dart';

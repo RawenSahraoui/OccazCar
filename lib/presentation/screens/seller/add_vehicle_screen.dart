@@ -7,6 +7,7 @@ import '../../../core/utils/validators.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
+import '../../providers/ai_description_provider.dart';
 
 class AddVehicleScreen extends ConsumerStatefulWidget {
   const AddVehicleScreen({super.key});
@@ -195,7 +196,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
             // Marque
             DropdownButtonFormField<String>(
-              value: _selectedBrand,
+              initialValue: _selectedBrand,
               decoration: const InputDecoration(
                 labelText: 'Marque *',
                 prefixIcon: Icon(Icons.directions_car),
@@ -276,7 +277,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
             // Carburant
             DropdownButtonFormField<FuelType>(
-              value: _fuelType,
+              initialValue: _fuelType,
               decoration: const InputDecoration(
                 labelText: 'Type de carburant *',
                 prefixIcon: Icon(Icons.local_gas_station),
@@ -295,7 +296,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
             // Transmission
             DropdownButtonFormField<TransmissionType>(
-              value: _transmission,
+              initialValue: _transmission,
               decoration: const InputDecoration(
                 labelText: 'Transmission *',
                 prefixIcon: Icon(Icons.settings),
@@ -361,7 +362,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
             // Condition
             DropdownButtonFormField<VehicleCondition>(
-              value: _condition,
+              initialValue: _condition,
               decoration: const InputDecoration(
                 labelText: 'État général *',
                 prefixIcon: Icon(Icons.check_circle),
@@ -380,7 +381,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
             // Nombre de propriétaires
             DropdownButtonFormField<int>(
-              value: _numberOfOwners,
+              initialValue: _numberOfOwners,
               decoration: const InputDecoration(
                 labelText: 'Nombre de propriétaires',
                 prefixIcon: Icon(Icons.person),
@@ -414,6 +415,36 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
+
+            Consumer(
+              builder: (context, ref, _) {
+                return Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Générer avec l’IA'),
+                    onPressed: () {
+                      final aiService = ref.read(aiDescriptionServiceProvider);
+
+                      final generatedDescription = aiService.generateDescription(
+                        brand: _selectedBrand ?? 'Véhicule',
+                        model: _modelController.text,
+                        year: int.tryParse(_yearController.text) ?? DateTime.now().year,
+                        mileage: int.tryParse(_mileageController.text) ?? 0,
+                        fuel: _getFuelTypeLabel(_fuelType),
+                        gearbox: _getTransmissionLabel(_transmission),
+                        condition: _getConditionLabel(_condition),
+                        city: _selectedCity ?? 'Tunisie',
+                      );
+
+                      _descriptionController.text = generatedDescription;
+                    },
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+
 
             TextFormField(
               controller: _descriptionController,
@@ -465,7 +496,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
-              value: _selectedCity,
+              initialValue: _selectedCity,
               decoration: const InputDecoration(
                 labelText: 'Ville *',
                 prefixIcon: Icon(Icons.location_city),

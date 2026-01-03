@@ -4,7 +4,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
-import '../../widgets/common/vehicle_card.dart';
 import '../buyer/vehicle_detail_screen.dart';
 import 'add_vehicle_screen.dart';
 import 'edit_vehicle_screen.dart';

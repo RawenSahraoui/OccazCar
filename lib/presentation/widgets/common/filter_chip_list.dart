@@ -13,10 +13,10 @@ class FilterChipList extends StatelessWidget {
   final Function(String?) onCategorySelected;
 
   FilterChipList({
-    Key? key,
+    super.key,
     this.selectedCategory,
     required this.onCategorySelected,
-  }) : super(key: key);
+  });
 
   String _getCategoryLabel(String category) {
     switch (category) {
