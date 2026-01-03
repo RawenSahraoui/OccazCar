@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/vehicle_provider.dart';
@@ -25,9 +28,12 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
   int _currentImageIndex = 0;
   final PageController _pageController = PageController();
 
+  GoogleMapController? _mapController;
+
   @override
   void dispose() {
     _pageController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 
@@ -48,7 +54,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             children: [
               CustomScrollView(
                 slivers: [
-                  // 🖼️ HEADER IMAGES
                   SliverAppBar(
                     expandedHeight: 320,
                     pinned: true,
@@ -119,9 +124,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               controller: _pageController,
                               itemCount: vehicle.imageUrls.length,
                               onPageChanged: (index) {
-                                setState(() {
-                                  _currentImageIndex = index;
-                                });
+                                setState(() => _currentImageIndex = index);
                               },
                               itemBuilder: (context, index) {
                                 return CachedNetworkImage(
@@ -130,20 +133,16 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                   placeholder: (context, url) => Container(
                                     color: AppTheme.backgroundColor,
                                     child: const Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
+                                      child: CircularProgressIndicator(strokeWidth: 2),
                                     ),
                                   ),
-                                  errorWidget: (context, url, error) =>
-                                      _buildImagePlaceholder(),
+                                  errorWidget: (context, url, error) => _buildImagePlaceholder(),
                                 );
                               },
                             )
                           else
                             _buildImagePlaceholder(),
 
-                          // Indicateur de pages
                           if (vehicle.imageUrls.length > 1)
                             Positioned(
                               bottom: 20,
@@ -151,10 +150,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               right: 0,
                               child: Center(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.6),
                                     borderRadius: BorderRadius.circular(20),
@@ -164,9 +160,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                     children: List.generate(
                                       vehicle.imageUrls.length,
                                           (index) => Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 3,
-                                        ),
+                                        margin: const EdgeInsets.symmetric(horizontal: 3),
                                         width: index == _currentImageIndex ? 20 : 6,
                                         height: 6,
                                         decoration: BoxDecoration(
@@ -186,32 +180,23 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                     ),
                   ),
 
-                  // 📝 CONTENU
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // En-tête avec prix
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: AppTheme.surfaceColor,
                             border: Border(
-                              bottom: BorderSide(
-                                color: AppTheme.borderColor,
-                                width: 1,
-                              ),
+                              bottom: BorderSide(color: AppTheme.borderColor, width: 1),
                             ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Badge condition
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: _getConditionColor(vehicle.condition),
                                   borderRadius: BorderRadius.circular(6),
@@ -227,35 +212,24 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-
-                              // Titre
                               Text(
                                 '${vehicle.brand} ${vehicle.model}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .displaySmall
-                                    ?.copyWith(
+                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   height: 1.1,
                                 ),
                               ),
                               const SizedBox(height: 16),
-
-                              // Prix
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                     decoration: BoxDecoration(
                                       gradient: AppTheme.goldGradient,
                                       borderRadius: BorderRadius.circular(10),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppTheme.secondaryColor
-                                              .withOpacity(0.3),
+                                          color: AppTheme.secondaryColor.withOpacity(0.3),
                                           blurRadius: 12,
                                           offset: const Offset(0, 4),
                                         ),
@@ -278,13 +252,9 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                         ),
 
                         const SizedBox(height: 8),
-
-                        // Caractéristiques principales
                         _buildSpecsSection(vehicle, numberFormat),
-
                         const SizedBox(height: 8),
 
-                        // Description
                         _buildSection(
                           'Description',
                           Icons.description_rounded,
@@ -297,7 +267,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           ),
                         ),
 
-                        // Équipements
                         if (vehicle.features.isNotEmpty)
                           _buildSection(
                             'Équipements & Options',
@@ -307,32 +276,20 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               runSpacing: 8,
                               children: vehicle.features.map((feature) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   decoration: BoxDecoration(
                                     color: AppTheme.successColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: AppTheme.successColor.withOpacity(0.3),
-                                    ),
+                                    border: Border.all(color: AppTheme.successColor.withOpacity(0.3)),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 14,
-                                        color: AppTheme.successColor,
-                                      ),
+                                      Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.successColor),
                                       const SizedBox(width: 6),
                                       Text(
                                         feature,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                       ),
                                     ],
                                   ),
@@ -341,7 +298,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
 
-                        // Alerte accidents
                         if (vehicle.hasAccidents)
                           Container(
                             margin: const EdgeInsets.all(16),
@@ -349,10 +305,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             decoration: BoxDecoration(
                               color: Colors.orange.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.orange.withOpacity(0.3),
-                                width: 1.5,
-                              ),
+                              border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1.5),
                             ),
                             child: Row(
                               children: [
@@ -362,11 +315,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                     color: Colors.orange,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(
-                                    Icons.warning_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                                  child: const Icon(Icons.warning_rounded, color: Colors.white, size: 20),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -383,12 +332,8 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        vehicle.accidentHistory ??
-                                            'Ce véhicule a eu des accidents',
-                                        style: TextStyle(
-                                          color: AppTheme.textSecondary,
-                                          fontSize: 12,
-                                        ),
+                                        vehicle.accidentHistory ?? 'Ce véhicule a eu des accidents',
+                                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                                       ),
                                     ],
                                   ),
@@ -397,59 +342,68 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
 
-                        // Localisation
+                        // Localisation texte
                         _buildSection(
                           'Localisation',
                           Icons.location_on_rounded,
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppTheme.backgroundColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    gradient: AppTheme.premiumGradient,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.location_city_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.backgroundColor,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        vehicle.city,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
-                                        ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: AppTheme.premiumGradient,
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      if (vehicle.address != null)
-                                        Text(
-                                          vehicle.address!,
-                                          style: TextStyle(
-                                            color: AppTheme.textSecondary,
-                                            fontSize: 12,
+                                      child: const Icon(
+                                        Icons.location_city_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            vehicle.city,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                            ),
                                           ),
-                                        ),
-                                    ],
-                                  ),
+                                          if (vehicle.address != null)
+                                            Text(
+                                              vehicle.address!,
+                                              style: TextStyle(
+                                                color: AppTheme.textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ),
+
+                              // ✅ Carte Google Maps si lat/lng existent
+                              if (vehicle.latitude != null && vehicle.longitude != null) ...[
+                                const SizedBox(height: 12),
+                                _buildMapSection(vehicle),
                               ],
-                            ),
+                            ],
                           ),
                         ),
 
-                        // Vendeur
                         _buildSection(
                           'Vendeur',
                           Icons.person_rounded,
@@ -522,7 +476,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           ),
                         ),
 
-                        // Info publication
                         Container(
                           margin: const EdgeInsets.all(16),
                           padding: const EdgeInsets.all(14),
@@ -557,7 +510,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                 ],
               ),
 
-              // Bottom bar
               Positioned(
                 left: 0,
                 right: 0,
@@ -571,6 +523,69 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
         error: (error, stack) => _buildErrorState(error.toString()),
       ),
     );
+  }
+
+  Widget _buildMapSection(VehicleModel vehicle) {
+    final lat = vehicle.latitude!;
+    final lng = vehicle.longitude!;
+    final pos = LatLng(lat, lng);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 180,
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(target: pos, zoom: 14),
+              onMapCreated: (c) => _mapController = c,
+              myLocationEnabled: false,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              markers: {
+                Marker(
+                  markerId: const MarkerId('vehicle'),
+                  position: pos,
+                ),
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async => _openGoogleMapsDirections(lat, lng),
+                icon: const Icon(Icons.directions_rounded),
+                label: const Text('Itinéraire'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () async {
+                  await _mapController?.animateCamera(
+                    CameraUpdate.newLatLngZoom(pos, 16),
+                  );
+                },
+                icon: const Icon(Icons.center_focus_strong),
+                label: const Text('Centrer'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openGoogleMapsDirections(double lat, double lng) async {
+    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      _showSnackBar('Impossible d’ouvrir Google Maps', AppTheme.accentColor);
+    }
   }
 
   Widget _buildImagePlaceholder() {
@@ -828,7 +843,11 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
       return;
     }
 
-    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
 
     try {
       final conversationId = await ref.read(createConversationProvider.notifier).createOrGetConversation(
@@ -894,37 +913,53 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
 
   Color _getConditionColor(VehicleCondition condition) {
     switch (condition) {
-      case VehicleCondition.excellent: return AppTheme.successColor;
-      case VehicleCondition.good: return AppTheme.primaryColor;
-      case VehicleCondition.fair: return const Color(0xFFF59E0B);
-      case VehicleCondition.poor: return AppTheme.accentColor;
+      case VehicleCondition.excellent:
+        return AppTheme.successColor;
+      case VehicleCondition.good:
+        return AppTheme.primaryColor;
+      case VehicleCondition.fair:
+        return const Color(0xFFF59E0B);
+      case VehicleCondition.poor:
+        return AppTheme.accentColor;
     }
   }
 
   String _getConditionLabel(VehicleCondition condition) {
     switch (condition) {
-      case VehicleCondition.excellent: return 'EXCELLENT';
-      case VehicleCondition.good: return 'BON ÉTAT';
-      case VehicleCondition.fair: return 'MOYEN';
-      case VehicleCondition.poor: return 'À RÉNOVER';
+      case VehicleCondition.excellent:
+        return 'EXCELLENT';
+      case VehicleCondition.good:
+        return 'BON ÉTAT';
+      case VehicleCondition.fair:
+        return 'MOYEN';
+      case VehicleCondition.poor:
+        return 'À RÉNOVER';
     }
   }
 
   String _getFuelTypeLabel(FuelType type) {
     switch (type) {
-      case FuelType.gasoline: return 'Essence';
-      case FuelType.diesel: return 'Diesel';
-      case FuelType.electric: return 'Électrique';
-      case FuelType.hybrid: return 'Hybride';
-      case FuelType.other: return 'Autre';
+      case FuelType.gasoline:
+        return 'Essence';
+      case FuelType.diesel:
+        return 'Diesel';
+      case FuelType.electric:
+        return 'Électrique';
+      case FuelType.hybrid:
+        return 'Hybride';
+      case FuelType.other:
+        return 'Autre';
     }
   }
 
   String _getTransmissionLabel(TransmissionType type) {
     switch (type) {
-      case TransmissionType.manual: return 'Manuelle';
-      case TransmissionType.automatic: return 'Automatique';
-      case TransmissionType.semiAutomatic: return 'Semi-automatique';
+      case TransmissionType.manual:
+        return 'Manuelle';
+      case TransmissionType.automatic:
+        return 'Automatique';
+      case TransmissionType.semiAutomatic:
+        return 'Semi-automatique';
     }
   }
 }

@@ -1,12 +1,19 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validators.dart';
+import '../../../core/utils/location_service.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
+import '../common/map_picker_screen.dart';
 
 class AddVehicleScreen extends ConsumerStatefulWidget {
   const AddVehicleScreen({super.key});
@@ -40,6 +47,10 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
+  // ✅ Geo
+  double? _latitude;
+  double? _longitude;
+
   @override
   void dispose() {
     _brandController.dispose();
@@ -61,18 +72,63 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       setState(() {
         _images.addAll(images);
         if (_images.length > AppConstants.maxVehicleImages) {
-          _images.removeRange(
-            AppConstants.maxVehicleImages,
-            _images.length,
-          );
+          _images.removeRange(AppConstants.maxVehicleImages, _images.length);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Maximum ${AppConstants.maxVehicleImages} images',
-              ),
-            ),
+            SnackBar(content: Text('Maximum ${AppConstants.maxVehicleImages} images')),
           );
         }
+      });
+    }
+  }
+
+  Future<void> _useMyLocation() async {
+    try {
+      setState(() => _isLoading = true);
+      final pos = await LocationService.getCurrentPosition();
+      setState(() {
+        _latitude = pos.latitude;
+        _longitude = pos.longitude;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Position actuelle récupérée'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur localisation: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickOnMap() async {
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialPosition: (_latitude != null && _longitude != null)
+              ? LatLng(_latitude!, _longitude!)
+              : null,
+          title: 'Localisation du véhicule',
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _latitude = result.latitude;
+        _longitude = result.longitude;
       });
     }
   }
@@ -93,23 +149,44 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     if (_selectedCity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez sélectionner une ville'),
+          content: Text('Veuillez selectionner une ville'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('Publication en cours...'),
+              const SizedBox(height: 8),
+              Text(
+                'Upload des images (${_images.length})',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
     final user = await ref.read(currentUserProvider.future);
     if (user == null) {
       if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Utilisateur non connecté')),
+          const SnackBar(content: Text('Utilisateur non connecte')),
         );
       }
-      setState(() => _isLoading = false);
       return;
     }
 
@@ -134,103 +211,91 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       imageUrls: [],
       city: _selectedCity!,
       address: _addressController.text.isEmpty ? null : _addressController.text,
+      latitude: _latitude,
+      longitude: _longitude,
       numberOfOwners: _numberOfOwners,
       hasAccidents: _hasAccidents,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    final vehicleId = await ref.read(createVehicleProvider.notifier).createVehicle(
-          vehicle: vehicle,
-          images: _images,
-        );
+    final vehicleId = await ref
+        .read(createVehicleProvider.notifier)
+        .createVehicle(vehicle: vehicle, images: _images);
 
-    setState(() => _isLoading = false);
-
-    if (vehicleId != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Annonce publiée avec succès !'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    if (mounted) {
       Navigator.pop(context);
-    } else if (mounted) {
-      final error = ref.read(createVehicleProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error?.toString() ?? 'Erreur lors de la publication'),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      if (vehicleId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Annonce publiee avec succes'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        final error = ref.read(createVehicleProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur: ${error?.toString() ?? "Erreur inconnue"}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasLatLng = _latitude != null && _longitude != null;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Publier une annonce'),
-      ),
+      appBar: AppBar(title: const Text('Publier une annonce')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Photos
-            Text(
-              'Photos du véhicule *',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Photos du vehicule *', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             _buildImagesSection(),
             const SizedBox(height: 24),
 
-            // Informations de base
-            Text(
-              'Informations de base',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Informations de base', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
-            // Marque
             DropdownButtonFormField<String>(
               value: _selectedBrand,
               decoration: const InputDecoration(
                 labelText: 'Marque *',
                 prefixIcon: Icon(Icons.directions_car),
               ),
-              items: AppConstants.carBrands.map((brand) {
-                return DropdownMenuItem(value: brand, child: Text(brand));
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedBrand = value);
-              },
-              validator: (value) =>
-                  Validators.validateRequired(value, 'La marque'),
+              items: AppConstants.carBrands
+                  .map((brand) => DropdownMenuItem(value: brand, child: Text(brand)))
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedBrand = value),
+              validator: (value) => Validators.validateRequired(value, 'La marque'),
             ),
             const SizedBox(height: 16),
 
-            // Modèle
             TextFormField(
               controller: _modelController,
               decoration: const InputDecoration(
-                labelText: 'Modèle *',
+                labelText: 'Modele *',
                 prefixIcon: Icon(Icons.car_rental),
               ),
-              validator: (value) =>
-                  Validators.validateRequired(value, 'Le modèle'),
+              validator: (value) => Validators.validateRequired(value, 'Le modele'),
             ),
             const SizedBox(height: 16),
 
-            // Année et Kilométrage
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _yearController,
                     decoration: const InputDecoration(
-                      labelText: 'Année *',
+                      labelText: 'Annee *',
                       prefixIcon: Icon(Icons.calendar_today),
                     ),
                     keyboardType: TextInputType.number,
@@ -242,7 +307,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   child: TextFormField(
                     controller: _mileageController,
                     decoration: const InputDecoration(
-                      labelText: 'Kilométrage *',
+                      labelText: 'Kilometrage *',
                       prefixIcon: Icon(Icons.speed),
                       suffixText: 'km',
                     ),
@@ -254,7 +319,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Prix
             TextFormField(
               controller: _priceController,
               decoration: const InputDecoration(
@@ -267,59 +331,46 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Détails techniques
-            Text(
-              'Détails techniques',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Details techniques', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
-            // Carburant
             DropdownButtonFormField<FuelType>(
               value: _fuelType,
               decoration: const InputDecoration(
                 labelText: 'Type de carburant *',
                 prefixIcon: Icon(Icons.local_gas_station),
               ),
-              items: FuelType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getFuelTypeLabel(type)),
-                );
-              }).toList(),
+              items: FuelType.values
+                  .map((type) => DropdownMenuItem(value: type, child: Text(_getFuelTypeLabel(type))))
+                  .toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _fuelType = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Transmission
             DropdownButtonFormField<TransmissionType>(
               value: _transmission,
               decoration: const InputDecoration(
                 labelText: 'Transmission *',
                 prefixIcon: Icon(Icons.settings),
               ),
-              items: TransmissionType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getTransmissionLabel(type)),
-                );
-              }).toList(),
+              items: TransmissionType.values
+                  .map((type) => DropdownMenuItem(value: type, child: Text(_getTransmissionLabel(type))))
+                  .toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _transmission = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Cylindrée et Puissance
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _engineSizeController,
                     decoration: const InputDecoration(
-                      labelText: 'Cylindrée',
+                      labelText: 'Cylindree',
                       prefixIcon: Icon(Icons.build),
                       suffixText: 'cc',
                     ),
@@ -342,7 +393,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Couleur
             TextFormField(
               controller: _colorController,
               decoration: const InputDecoration(
@@ -352,116 +402,84 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             ),
             const SizedBox(height: 24),
 
-            // État et condition
-            Text(
-              'État du véhicule',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Etat du vehicule', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
-            // Condition
             DropdownButtonFormField<VehicleCondition>(
               value: _condition,
               decoration: const InputDecoration(
-                labelText: 'État général *',
+                labelText: 'Etat general *',
                 prefixIcon: Icon(Icons.check_circle),
               ),
-              items: VehicleCondition.values.map((condition) {
-                return DropdownMenuItem(
-                  value: condition,
-                  child: Text(_getConditionLabel(condition)),
-                );
-              }).toList(),
+              items: VehicleCondition.values
+                  .map((c) => DropdownMenuItem(value: c, child: Text(_getConditionLabel(c))))
+                  .toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _condition = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Nombre de propriétaires
             DropdownButtonFormField<int>(
               value: _numberOfOwners,
               decoration: const InputDecoration(
-                labelText: 'Nombre de propriétaires',
+                labelText: 'Nombre de proprietaires',
                 prefixIcon: Icon(Icons.person),
               ),
-              items: List.generate(5, (index) => index + 1).map((num) {
-                return DropdownMenuItem(
-                  value: num,
-                  child: Text(num == 1 ? '1er propriétaire' : '$num propriétaires'),
-                );
-              }).toList(),
+              items: List.generate(5, (i) => i + 1)
+                  .map((num) => DropdownMenuItem(
+                value: num,
+                child: Text(num == 1 ? '1er proprietaire' : '$num proprietaires'),
+              ))
+                  .toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _numberOfOwners = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Accidents
             SwitchListTile(
               title: const Text('A eu des accidents'),
               value: _hasAccidents,
-              onChanged: (value) {
-                setState(() => _hasAccidents = value);
-              },
+              onChanged: (value) => setState(() => _hasAccidents = value),
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 24),
 
-            // Description
-            Text(
-              'Description',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Description', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
-                labelText: 'Description du véhicule *',
+                labelText: 'Description du vehicule *',
                 alignLabelWithHint: true,
-                hintText: 'Décrivez votre véhicule en détail...',
+                hintText: 'Decrivez votre vehicule',
               ),
               maxLines: 5,
               validator: Validators.validateDescription,
             ),
             const SizedBox(height: 24),
 
-            // Caractéristiques
-            Text(
-              'Caractéristiques',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Caracteristiques', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: AppConstants.commonFeatures.map((feature) {
-                final isSelected = _selectedFeatures.contains(feature);
+              children: AppConstants.commonFeatures.map((f) {
+                final selected = _selectedFeatures.contains(f);
                 return FilterChip(
-                  label: Text(feature),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedFeatures.add(feature);
-                      } else {
-                        _selectedFeatures.remove(feature);
-                      }
-                    });
-                  },
+                  label: Text(f),
+                  selected: selected,
+                  onSelected: (s) => setState(() => s ? _selectedFeatures.add(f) : _selectedFeatures.remove(f)),
                   selectedColor: AppTheme.primaryColor.withOpacity(0.3),
                 );
               }).toList(),
             ),
             const SizedBox(height: 24),
 
-            // Localisation
-            Text(
-              'Localisation',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Localisation', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
@@ -470,14 +488,11 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                 labelText: 'Ville *',
                 prefixIcon: Icon(Icons.location_city),
               ),
-              items: AppConstants.tunisianCities.map((city) {
-                return DropdownMenuItem(value: city, child: Text(city));
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedCity = value);
-              },
-              validator: (value) =>
-                  Validators.validateRequired(value, 'La ville'),
+              items: AppConstants.tunisianCities
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedCity = value),
+              validator: (value) => Validators.validateRequired(value, 'La ville'),
             ),
             const SizedBox(height: 16),
 
@@ -488,9 +503,67 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                 prefixIcon: Icon(Icons.location_on),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // ✅ Bloc géolocalisation
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.map, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Position sur la carte (optionnel)',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    hasLatLng
+                        ? 'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}'
+                        : 'Aucune position sélectionnée',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _useMyLocation,
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('Utiliser ma position'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _pickOnMap,
+                        icon: const Icon(Icons.place),
+                        label: const Text('Choisir sur la carte'),
+                      ),
+                      if (hasLatLng)
+                        TextButton.icon(
+                          onPressed: () => setState(() {
+                            _latitude = null;
+                            _longitude = null;
+                          }),
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('Effacer'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 32),
 
-            // Bouton Publier
             ElevatedButton(
               onPressed: _isLoading ? null : _submitForm,
               style: ElevatedButton.styleFrom(
@@ -498,13 +571,13 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               ),
               child: _isLoading
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
                   : const Text('Publier l\'annonce'),
             ),
             const SizedBox(height: 16),
@@ -524,9 +597,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               scrollDirection: Axis.horizontal,
               itemCount: _images.length + 1,
               itemBuilder: (context, index) {
-                if (index == _images.length) {
-                  return _buildAddImageButton();
-                }
+                if (index == _images.length) return _buildAddImageButton();
                 return _buildImagePreview(_images[index], index);
               },
             ),
@@ -553,10 +624,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
           children: [
             Icon(Icons.add_photo_alternate, size: 40, color: AppTheme.primaryColor),
             const SizedBox(height: 8),
-            Text(
-              'Ajouter',
-              style: TextStyle(color: AppTheme.primaryColor),
-            ),
+            Text('Ajouter', style: TextStyle(color: AppTheme.primaryColor)),
           ],
         ),
       ),
@@ -572,8 +640,26 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              image.path,
+            child: kIsWeb
+                ? FutureBuilder<Uint8List>(
+              future: image.readAsBytes(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return Image.memory(
+                    snapshot.data!,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  );
+                }
+                return Container(
+                  color: Colors.grey[300],
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              },
+            )
+                : Image.file(
+              File(image.path),
               width: 120,
               height: 120,
               fit: BoxFit.cover,
@@ -587,9 +673,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             top: 4,
             right: 4,
             child: GestureDetector(
-              onTap: () {
-                setState(() => _images.removeAt(index));
-              },
+              onTap: () => setState(() => _images.removeAt(index)),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
@@ -612,7 +696,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       case FuelType.diesel:
         return 'Diesel';
       case FuelType.electric:
-        return 'Électrique';
+        return 'Electrique';
       case FuelType.hybrid:
         return 'Hybride';
       case FuelType.other:
