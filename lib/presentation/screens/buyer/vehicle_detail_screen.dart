@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -24,6 +23,13 @@ class VehicleDetailScreen extends ConsumerStatefulWidget {
 
 class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
   int _currentImageIndex = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +37,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
     final numberFormat = NumberFormat('#,###', 'fr_FR');
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundColor,
       body: vehicleAsync.when(
         data: (vehicle) {
           if (vehicle == null) {
@@ -42,11 +48,12 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             children: [
               CustomScrollView(
                 slivers: [
+                  // 🖼️ HEADER IMAGES
                   SliverAppBar(
-                    expandedHeight: 380,
+                    expandedHeight: 320,
                     pinned: true,
                     elevation: 0,
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppTheme.surfaceColor,
                     leading: Container(
                       margin: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -56,13 +63,12 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
                             blurRadius: 8,
-                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back_rounded),
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.primaryColor,
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
@@ -76,16 +82,13 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
                               blurRadius: 8,
-                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.favorite_border_rounded),
-                          color: AppTheme.errorColor,
-                          onPressed: () {
-                            // TODO: Favoris
-                          },
+                          color: AppTheme.accentColor,
+                          onPressed: () {},
                         ),
                       ),
                       Container(
@@ -97,16 +100,13 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
                               blurRadius: 8,
-                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.share_rounded),
-                          color: AppTheme.textPrimary,
-                          onPressed: () {
-                            // TODO: Partager
-                          },
+                          color: AppTheme.primaryColor,
+                          onPressed: () {},
                         ),
                       ),
                     ],
@@ -116,6 +116,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                         children: [
                           if (vehicle.imageUrls.isNotEmpty)
                             PageView.builder(
+                              controller: _pageController,
                               itemCount: vehicle.imageUrls.length,
                               onPageChanged: (index) {
                                 setState(() {
@@ -123,69 +124,56 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                 });
                               },
                               itemBuilder: (context, index) {
-                                return Hero(
-                                  tag: 'vehicle_${vehicle.id}',
-                                  child: CachedNetworkImage(
-                                    imageUrl: vehicle.imageUrls[index],
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.grey[200]!,
-                                            Colors.grey[100]!,
-                                          ],
-                                        ),
-                                      ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                                return CachedNetworkImage(
+                                  imageUrl: vehicle.imageUrls[index],
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: AppTheme.backgroundColor,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
                                       ),
                                     ),
-                                    errorWidget: (context, url, error) =>
-                                        _buildImagePlaceholder(),
                                   ),
+                                  errorWidget: (context, url, error) =>
+                                      _buildImagePlaceholder(),
                                 );
                               },
                             )
                           else
                             _buildImagePlaceholder(),
+
+                          // Indicateur de pages
                           if (vehicle.imageUrls.length > 1)
                             Positioned(
                               bottom: 20,
                               left: 0,
                               right: 0,
                               child: Center(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: List.generate(
-                                          vehicle.imageUrls.length,
-                                              (index) => AnimatedContainer(
-                                            duration: const Duration(milliseconds: 300),
-                                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                                            width: index == _currentImageIndex ? 24 : 8,
-                                            height: 8,
-                                            decoration: BoxDecoration(
-                                              color: index == _currentImageIndex
-                                                  ? Colors.white
-                                                  : Colors.white.withOpacity(0.5),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                          ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: List.generate(
+                                      vehicle.imageUrls.length,
+                                          (index) => Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 3,
+                                        ),
+                                        width: index == _currentImageIndex ? 20 : 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: index == _currentImageIndex
+                                              ? Colors.white
+                                              : Colors.white.withOpacity(0.5),
+                                          borderRadius: BorderRadius.circular(3),
                                         ),
                                       ),
                                     ),
@@ -197,87 +185,107 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                       ),
                     ),
                   ),
+
+                  // 📝 CONTENU
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // En-tête avec prix
                         Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
+                            color: AppTheme.surfaceColor,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: AppTheme.borderColor,
+                                width: 1,
                               ),
-                            ],
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Badge condition
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: 10,
+                                  vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: _getConditionGradient(vehicle.condition),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: _getConditionColor(vehicle.condition),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  _getConditionLabel(vehicle.condition).toUpperCase(),
+                                  _getConditionLabel(vehicle.condition),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                '${vehicle.brand} ${vehicle.model}',
-                                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: AppTheme.primaryGradient,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.primaryColor.withOpacity(0.3),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  '${numberFormat.format(vehicle.price)} TND',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 12),
+
+                              // Titre
+                              Text(
+                                '${vehicle.brand} ${vehicle.model}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .displaySmall
+                                    ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Prix
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.goldGradient,
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.secondaryColor
+                                              .withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      '${numberFormat.format(vehicle.price)} TND',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
+
                         const SizedBox(height: 8),
-                        _buildSpecsGrid(vehicle, numberFormat),
+
+                        // Caractéristiques principales
+                        _buildSpecsSection(vehicle, numberFormat),
+
                         const SizedBox(height: 8),
+
+                        // Description
                         _buildSection(
-                          context,
                           'Description',
                           Icons.description_rounded,
                           child: Text(
@@ -288,25 +296,26 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
                         ),
+
+                        // Équipements
                         if (vehicle.features.isNotEmpty)
                           _buildSection(
-                            context,
-                            'Équipements',
-                            Icons.checklist_rounded,
+                            'Équipements & Options',
+                            Icons.star_rounded,
                             child: Wrap(
                               spacing: 8,
                               runSpacing: 8,
                               children: vehicle.features.map((feature) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: AppTheme.successColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: AppTheme.accentColor.withOpacity(0.3),
+                                      color: AppTheme.successColor.withOpacity(0.3),
                                     ),
                                   ),
                                   child: Row(
@@ -314,16 +323,15 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                     children: [
                                       Icon(
                                         Icons.check_circle_rounded,
-                                        size: 16,
-                                        color: AppTheme.accentColor,
+                                        size: 14,
+                                        color: AppTheme.successColor,
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 6),
                                       Text(
                                         feature,
-                                        style: TextStyle(
-                                          fontSize: 13,
+                                        style: const TextStyle(
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: AppTheme.textPrimary,
                                         ),
                                       ),
                                     ],
@@ -332,33 +340,35 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               }).toList(),
                             ),
                           ),
+
+                        // Alerte accidents
                         if (vehicle.hasAccidents)
                           Container(
                             margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: Colors.orange.withOpacity(0.3),
-                                width: 2,
+                                width: 1.5,
                               ),
                             ),
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: Colors.orange,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Icon(
                                     Icons.warning_rounded,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: 20,
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,15 +378,16 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                         style: TextStyle(
                                           color: Colors.orange,
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 15,
+                                          fontSize: 14,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        vehicle.accidentHistory ?? 'Ce véhicule a eu des accidents',
+                                        vehicle.accidentHistory ??
+                                            'Ce véhicule a eu des accidents',
                                         style: TextStyle(
                                           color: AppTheme.textSecondary,
-                                          fontSize: 13,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],
@@ -385,31 +396,32 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               ],
                             ),
                           ),
+
+                        // Localisation
                         _buildSection(
-                          context,
                           'Localisation',
                           Icons.location_on_rounded,
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: AppTheme.backgroundColor,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    gradient: AppTheme.primaryGradient,
-                                    borderRadius: BorderRadius.circular(12),
+                                    gradient: AppTheme.premiumGradient,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Icon(
                                     Icons.location_city_rounded,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: 20,
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +430,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                         vehicle.city,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 16,
+                                          fontSize: 15,
                                         ),
                                       ),
                                       if (vehicle.address != null)
@@ -426,7 +438,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                           vehicle.address!,
                                           style: TextStyle(
                                             color: AppTheme.textSecondary,
-                                            fontSize: 13,
+                                            fontSize: 12,
                                           ),
                                         ),
                                     ],
@@ -436,8 +448,9 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
                         ),
+
+                        // Vendeur
                         _buildSection(
-                          context,
                           'Vendeur',
                           Icons.person_rounded,
                           child: InkWell(
@@ -452,34 +465,34 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: AppTheme.backgroundColor,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 56,
-                                    height: 56,
+                                    width: 50,
+                                    height: 50,
                                     decoration: BoxDecoration(
-                                      gradient: AppTheme.primaryGradient,
-                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: AppTheme.premiumGradient,
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Center(
                                       child: Text(
                                         vehicle.sellerName[0].toUpperCase(),
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 24,
+                                          fontSize: 20,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,15 +501,15 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                           vehicle.sellerName,
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 16,
+                                            fontSize: 15,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 2),
                                         Text(
                                           'Voir le profil →',
                                           style: TextStyle(
                                             color: AppTheme.primaryColor,
-                                            fontSize: 13,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -508,23 +521,25 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
                         ),
+
+                        // Info publication
                         Container(
                           margin: const EdgeInsets.all(16),
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: AppTheme.backgroundColor,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _buildInfoChip(
                                 Icons.calendar_today_rounded,
-                                'Publié le ${DateFormat('dd/MM/yy').format(vehicle.createdAt)}',
+                                DateFormat('dd/MM/yy').format(vehicle.createdAt),
                               ),
                               Container(
                                 width: 1,
-                                height: 24,
+                                height: 20,
                                 color: AppTheme.borderColor,
                               ),
                               _buildInfoChip(
@@ -534,24 +549,25 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ],
                           ),
                         ),
+
                         const SizedBox(height: 100),
                       ],
                     ),
                   ),
                 ],
               ),
+
+              // Bottom bar
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _buildBottomBar(context, vehicle),
+                child: _buildBottomBar(vehicle),
               ),
             ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildErrorState(error.toString()),
       ),
     );
@@ -559,14 +575,10 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
 
   Widget _buildImagePlaceholder() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.grey[200]!, Colors.grey[100]!],
-        ),
-      ),
+      color: AppTheme.backgroundColor,
       child: Center(
         child: Icon(
-          Icons.directions_car_rounded,
+          Icons.directions_car_filled_rounded,
           size: 80,
           color: AppTheme.textTertiary,
         ),
@@ -574,112 +586,121 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
     );
   }
 
-  Widget _buildSpecsGrid(VehicleModel vehicle, NumberFormat numberFormat) {
+  Widget _buildSpecsSection(VehicleModel vehicle, NumberFormat numberFormat) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.cardShadow,
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderColor),
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(child: _buildSpecItem(Icons.calendar_today_rounded, 'Année', vehicle.year.toString())),
-              Expanded(child: _buildSpecItem(Icons.speed_rounded, 'Kilométrage', '${numberFormat.format(vehicle.mileage)} km')),
-            ],
-          ),
-          const Divider(height: 24),
-          Row(
-            children: [
-              Expanded(child: _buildSpecItem(Icons.local_gas_station_rounded, 'Carburant', _getFuelTypeLabel(vehicle.fuelType))),
-              Expanded(child: _buildSpecItem(Icons.settings_rounded, 'Transmission', _getTransmissionLabel(vehicle.transmission))),
-            ],
-          ),
-          if (vehicle.horsePower != null || vehicle.color != null) ...[
-            const Divider(height: 24),
-            Row(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                if (vehicle.horsePower != null)
-                  Expanded(child: _buildSpecItem(Icons.flash_on_rounded, 'Puissance', '${vehicle.horsePower} ch')),
-                if (vehicle.color != null)
-                  Expanded(child: _buildSpecItem(Icons.palette_rounded, 'Couleur', vehicle.color!)),
+                Icon(Icons.info_outline_rounded, size: 20, color: AppTheme.primaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  'Caractéristiques techniques',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
-          ],
-          const Divider(height: 24),
-          Row(
-            children: [
-              Expanded(child: _buildSpecItem(Icons.person_outline_rounded, 'Propriétaires', vehicle.numberOfOwners == 1 ? '1er' : '${vehicle.numberOfOwners}')),
-              Expanded(child: _buildSpecItem(Icons.verified_outlined, 'État', _getConditionLabel(vehicle.condition))),
-            ],
+          ),
+          Divider(height: 1, color: AppTheme.borderColor),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildSpecRow('Année', vehicle.year.toString(), Icons.calendar_today_rounded),
+                const SizedBox(height: 12),
+                _buildSpecRow('Kilométrage', '${numberFormat.format(vehicle.mileage)} km', Icons.speed_rounded),
+                const SizedBox(height: 12),
+                _buildSpecRow('Carburant', _getFuelTypeLabel(vehicle.fuelType), Icons.local_gas_station_rounded),
+                const SizedBox(height: 12),
+                _buildSpecRow('Transmission', _getTransmissionLabel(vehicle.transmission), Icons.settings_rounded),
+                if (vehicle.horsePower != null) ...[
+                  const SizedBox(height: 12),
+                  _buildSpecRow('Puissance', '${vehicle.horsePower} ch', Icons.flash_on_rounded),
+                ],
+                if (vehicle.color != null) ...[
+                  const SizedBox(height: 12),
+                  _buildSpecRow('Couleur', vehicle.color!, Icons.palette_rounded),
+                ],
+                const SizedBox(height: 12),
+                _buildSpecRow(
+                  'Propriétaires',
+                  vehicle.numberOfOwners == 1 ? '1er propriétaire' : '${vehicle.numberOfOwners} propriétaires',
+                  Icons.person_outline_rounded,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSpecItem(IconData icon, String label, String value) {
-    return Column(
+  Widget _buildSpecRow(String label, String value, IconData icon) {
+    return Row(
       children: [
-        Icon(icon, color: AppTheme.primaryColor, size: 24),
-        const SizedBox(height: 8),
+        Icon(icon, size: 18, color: AppTheme.textSecondary),
+        const SizedBox(width: 10),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            color: AppTheme.textTertiary,
+            fontSize: 13,
+            color: AppTheme.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 4),
+        const Spacer(),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildSection(BuildContext context, String title, IconData icon, {required Widget child}) {
+  Widget _buildSection(String title, IconData icon, {required Widget child}) {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.cardShadow,
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: AppTheme.primaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                child: Icon(icon, color: AppTheme.primaryColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          child,
+          Divider(height: 1, color: AppTheme.borderColor),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
         ],
       ),
     );
@@ -689,35 +710,35 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppTheme.textTertiary),
+        Icon(icon, size: 14, color: AppTheme.textTertiary),
         const SizedBox(width: 6),
         Text(
           text,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             color: AppTheme.textSecondary,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, VehicleModel vehicle) {
+  Widget _buildBottomBar(VehicleModel vehicle) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppTheme.primaryColor.withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
         ],
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(28),
-          topRight: Radius.circular(28),
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
       ),
       child: SafeArea(
@@ -725,14 +746,11 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  _showCallDialog(context, vehicle);
-                },
-                icon: const Icon(Icons.phone_rounded, size: 20),
+                onPressed: () => _showCallDialog(vehicle),
+                icon: const Icon(Icons.phone_rounded, size: 18),
                 label: const Text('Appeler'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: AppTheme.primaryColor, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
@@ -740,12 +758,11 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: () => _handleMessage(context, vehicle),
-                icon: const Icon(Icons.chat_bubble_rounded, size: 20),
-                label: const Text('Envoyer un message'),
+                onPressed: () => _handleMessage(vehicle),
+                icon: const Icon(Icons.chat_rounded, size: 18),
+                label: const Text('Message'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  elevation: 4,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
@@ -755,34 +772,30 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
     );
   }
 
-  void _showCallDialog(BuildContext context, VehicleModel vehicle) {
+  void _showCallDialog(VehicleModel vehicle) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.all(24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+                gradient: AppTheme.premiumGradient,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.phone_rounded, color: Colors.white, size: 32),
+              child: const Icon(Icons.phone_rounded, color: Colors.white, size: 28),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               'Appeler ${vehicle.sellerName}',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
-            const Text(
-              '+216 XX XXX XXX',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
+            const SizedBox(height: 8),
+            const Text('+216 XX XXX XXX', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ],
         ),
         actions: [
@@ -794,7 +807,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Appel téléphonique - À venir')),
+                const SnackBar(content: Text('Appel - À venir')),
               );
             },
             child: const Text('Appeler'),
@@ -804,25 +817,21 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
     );
   }
 
-  Future<void> _handleMessage(BuildContext context, VehicleModel vehicle) async {
+  Future<void> _handleMessage(VehicleModel vehicle) async {
     final user = await ref.read(currentUserProvider.future);
-
     if (user == null) {
-      _showSnackBar(context, 'Vous devez être connecté', Colors.red);
+      _showSnackBar('Vous devez être connecté', AppTheme.accentColor);
       return;
     }
-
     if (user.uid == vehicle.sellerId) {
-      _showSnackBar(context, 'C\'est votre propre annonce', Colors.orange);
+      _showSnackBar('C\'est votre annonce', Colors.orange);
       return;
     }
 
-    _showLoadingDialog(context);
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
 
     try {
-      final conversationId = await ref
-          .read(createConversationProvider.notifier)
-          .createOrGetConversation(
+      final conversationId = await ref.read(createConversationProvider.notifier).createOrGetConversation(
         vehicleId: vehicle.id,
         buyerId: user.uid,
         sellerId: vehicle.sellerId,
@@ -833,38 +842,25 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
         buyerPhotoUrl: user.photoUrl,
       );
 
-      if (context.mounted) {
+      if (mounted) {
         Navigator.pop(context);
         if (conversationId != null) {
-          _showSnackBar(context, 'Conversation créée ! Allez dans Messages.', Colors.green);
+          _showSnackBar('Conversation créée !', AppTheme.successColor);
         } else {
-          _showSnackBar(context, 'Erreur lors de la création', Colors.red);
+          _showSnackBar('Erreur', AppTheme.accentColor);
         }
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         Navigator.pop(context);
-        _showSnackBar(context, 'Erreur: $e', Colors.red);
+        _showSnackBar('Erreur: $e', AppTheme.accentColor);
       }
     }
   }
 
-  void _showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  void _showSnackBar(BuildContext context, String message, Color color) {
+  void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+      SnackBar(content: Text(message), backgroundColor: color),
     );
   }
 
@@ -886,38 +882,31 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline_rounded, size: 80, color: AppTheme.errorColor),
+          Icon(Icons.error_outline_rounded, size: 80, color: AppTheme.accentColor),
           const SizedBox(height: 16),
           Text('Erreur: $error'),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Retour'),
-          ),
+          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Retour')),
         ],
       ),
     );
   }
 
-  LinearGradient _getConditionGradient(VehicleCondition condition) {
+  Color _getConditionColor(VehicleCondition condition) {
     switch (condition) {
-      case VehicleCondition.excellent:
-        return const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]);
-      case VehicleCondition.good:
-        return AppTheme.primaryGradient;
-      case VehicleCondition.fair:
-        return const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]);
-      case VehicleCondition.poor:
-        return const LinearGradient(colors: [Color(0xFFEF4444), Color(0xFFDC2626)]);
+      case VehicleCondition.excellent: return AppTheme.successColor;
+      case VehicleCondition.good: return AppTheme.primaryColor;
+      case VehicleCondition.fair: return const Color(0xFFF59E0B);
+      case VehicleCondition.poor: return AppTheme.accentColor;
     }
   }
 
   String _getConditionLabel(VehicleCondition condition) {
     switch (condition) {
-      case VehicleCondition.excellent: return 'Excellent';
-      case VehicleCondition.good: return 'Bon';
-      case VehicleCondition.fair: return 'Moyen';
-      case VehicleCondition.poor: return 'Mauvais';
+      case VehicleCondition.excellent: return 'EXCELLENT';
+      case VehicleCondition.good: return 'BON ÉTAT';
+      case VehicleCondition.fair: return 'MOYEN';
+      case VehicleCondition.poor: return 'À RÉNOVER';
     }
   }
 
@@ -934,8 +923,8 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
   String _getTransmissionLabel(TransmissionType type) {
     switch (type) {
       case TransmissionType.manual: return 'Manuelle';
-      case TransmissionType.automatic: return 'Auto';
-      case TransmissionType.semiAutomatic: return 'Semi-auto';
+      case TransmissionType.automatic: return 'Automatique';
+      case TransmissionType.semiAutomatic: return 'Semi-automatique';
     }
   }
 }
