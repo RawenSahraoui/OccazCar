@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../home/home_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -39,32 +39,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     final success = await ref.read(signUpProvider.notifier).signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          displayName: _nameController.text.trim(),
-          userType: _selectedUserType,
-          phoneNumber: _phoneController.text.trim().isEmpty
-              ? null
-              : _phoneController.text.trim(),
-        );
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      displayName: _nameController.text.trim(),
+      userType: _selectedUserType,
+      phoneNumber: _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+    );
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+    if (success) {
+      if (mounted) {
+        context.go('/home');
+      }
     } else {
       final error = ref.read(signUpProvider).error;
       if (mounted && error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.toString()),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.accentColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -73,9 +78,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Créer un compte'),
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -86,17 +95,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Icône
-                Icon(
-                  Icons.person_add_outlined,
-                  size: 60,
-                  color: AppTheme.primaryColor,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: isDark ? AppTheme.goldGradient : AppTheme.premiumGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor)
+                            .withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.person_add_outlined,
+                    size: 50,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 24),
 
                 // Type d'utilisateur
                 Text(
                   'Je suis :',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -109,8 +135,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         onChanged: _isLoading
                             ? null
                             : (value) {
-                                setState(() => _selectedUserType = value!);
-                              },
+                          if (mounted) {
+                            setState(() => _selectedUserType = value!);
+                          }
+                        },
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -122,8 +150,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         onChanged: _isLoading
                             ? null
                             : (value) {
-                                setState(() => _selectedUserType = value!);
-                              },
+                          if (mounted) {
+                            setState(() => _selectedUserType = value!);
+                          }
+                        },
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -136,8 +166,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onChanged: _isLoading
                       ? null
                       : (value) {
-                          setState(() => _selectedUserType = value!);
-                        },
+                    if (mounted) {
+                      setState(() => _selectedUserType = value!);
+                    }
+                  },
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 24),
@@ -145,9 +177,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Nom complet
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Nom complet',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                    ),
                   ),
                   validator: Validators.validateName,
                   enabled: !_isLoading,
@@ -158,9 +193,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                    ),
                   ),
                   validator: Validators.validateEmail,
                   enabled: !_isLoading,
@@ -171,9 +209,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Téléphone (optionnel)',
-                    prefixIcon: Icon(Icons.phone_outlined),
+                    prefixIcon: Icon(
+                      Icons.phone_outlined,
+                      color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                    ),
                     hintText: '12345678',
                   ),
                   validator: Validators.validatePhone,
@@ -187,7 +228,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Mot de passe',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -195,7 +239,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             : Icons.visibility_off_outlined,
                       ),
                       onPressed: () {
-                        setState(() => _obscurePassword = !_obscurePassword);
+                        if (mounted) {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        }
                       },
                     ),
                   ),
@@ -210,7 +256,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
                     labelText: 'Confirmer le mot de passe',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
@@ -218,8 +267,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             : Icons.visibility_off_outlined,
                       ),
                       onPressed: () {
-                        setState(() =>
-                            _obscureConfirmPassword = !_obscureConfirmPassword);
+                        if (mounted) {
+                          setState(() =>
+                          _obscureConfirmPassword = !_obscureConfirmPassword);
+                        }
                       },
                     ),
                   ),
@@ -234,16 +285,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Bouton S'inscrire
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   child: _isLoading
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('S\'inscrire'),
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
+                    'S\'inscrire',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -256,8 +319,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onPressed: _isLoading
                           ? null
                           : () {
-                              Navigator.pop(context);
-                            },
+                        context.pop();
+                      },
                       child: const Text('Se connecter'),
                     ),
                   ],

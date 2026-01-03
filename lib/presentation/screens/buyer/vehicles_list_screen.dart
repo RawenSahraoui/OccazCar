@@ -13,8 +13,7 @@ class VehiclesListScreen extends ConsumerStatefulWidget {
   ConsumerState<VehiclesListScreen> createState() => _VehiclesListScreenState();
 }
 
-class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
-    with SingleTickerProviderStateMixin {
+class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
   String _searchQuery = '';
   String? _selectedCondition;
   double? _minPrice;
@@ -22,22 +21,10 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
   int? _minYear;
   int? _maxYear;
 
-  late AnimationController _animationController;
   final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _animationController.forward();
-  }
-
-  @override
   void dispose() {
-    _animationController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -48,218 +35,215 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // 🎨 APP BAR MODERNE AVEC DÉGRADÉ
-          SliverAppBar(
-            expandedHeight: 200,
-            floating: false,
-            pinned: true,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Découvrez',
-                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          'Votre prochaine voiture',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 🎯 HEADER AVEC LOGO ET TITRE
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                ),
+                ],
               ),
-            ),
-          ),
-
-          // 🔍 BARRE DE RECHERCHE ÉLÉGANTE
-          SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: const Offset(0, -20),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: AppTheme.cardShadow,
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value.toLowerCase();
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Rechercher une marque, modèle...',
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: AppTheme.primaryColor,
-                        size: 24,
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                        icon: Icon(
-                          Icons.clear_rounded,
-                          color: AppTheme.textTertiary,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                          : Container(
-                        margin: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Logo automobile
+                      Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          gradient: AppTheme.primaryGradient,
+                          gradient: AppTheme.premiumGradient,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.directions_car_filled_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'OccazCar',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                            Text(
+                              'Trouvez votre voiture idéale',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 🔍 BARRE DE RECHERCHE
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppTheme.backgroundColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _searchQuery.isNotEmpty
+                                  ? AppTheme.primaryColor
+                                  : AppTheme.borderColor,
+                              width: _searchQuery.isNotEmpty ? 1.5 : 1,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value.toLowerCase();
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Marque, modèle, ville...',
+                              hintStyle: TextStyle(
+                                color: AppTheme.textTertiary,
+                                fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: _searchQuery.isNotEmpty
+                                    ? AppTheme.primaryColor
+                                    : AppTheme.textTertiary,
+                                size: 22,
+                              ),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                icon: Icon(
+                                  Icons.clear_rounded,
+                                  color: AppTheme.textTertiary,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _searchQuery = '';
+                                  });
+                                },
+                              )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Bouton filtres
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.premiumGradient,
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: IconButton(
                           icon: const Icon(
                             Icons.tune_rounded,
                             color: Colors.white,
-                            size: 20,
+                            size: 22,
                           ),
                           onPressed: () => _showFilterDialog(context),
                         ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                    ),
+                    ],
                   ),
-                ),
+                ],
               ),
             ),
-          ),
 
-          // 🎯 FILTRES CONDITIONS
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 16),
-              child: SizedBox(
-                height: 46,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    _buildConditionChip('Tous', null),
-                    _buildConditionChip('Excellent', 'excellent'),
-                    _buildConditionChip('Bon', 'good'),
-                    _buildConditionChip('Moyen', 'fair'),
-                    _buildConditionChip('Mauvais', 'poor'),
-                  ],
-                ),
+            // 🎨 FILTRES CONDITIONS (CHIPS HORIZONTAUX)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  _buildConditionChip('Tous', null),
+                  const SizedBox(width: 8),
+                  _buildConditionChip('Excellent', 'excellent'),
+                  const SizedBox(width: 8),
+                  _buildConditionChip('Bon état', 'good'),
+                  const SizedBox(width: 8),
+                  _buildConditionChip('Moyen', 'fair'),
+                  const SizedBox(width: 8),
+                  _buildConditionChip('À rénover', 'poor'),
+                ],
               ),
             ),
-          ),
 
-          // 📱 LISTE DES VÉHICULES
-          vehiclesAsync.when(
-            data: (vehicles) {
-              final filteredVehicles = _filterVehicles(vehicles);
+            // 📱 LISTE DES VÉHICULES
+            Expanded(
+              child: vehiclesAsync.when(
+                data: (vehicles) {
+                  final filteredVehicles = _filterVehicles(vehicles);
 
-              if (filteredVehicles.isEmpty) {
-                return SliverFillRemaining(
-                  child: _buildEmptyState(vehicles.length),
-                );
-              }
+                  if (filteredVehicles.isEmpty) {
+                    return _buildEmptyState(vehicles.length);
+                  }
 
-              return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      final vehicle = filteredVehicles[index];
-                      return FadeTransition(
-                        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: _animationController,
-                            curve: Interval(
-                              (index / filteredVehicles.length) * 0.5,
-                              1.0,
-                              curve: Curves.easeOut,
-                            ),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
-                          child: VehicleCard(
-                            vehicle: vehicle,
-                            onTap: () {
-                              context.push('/vehicle/${vehicle.id}');
-                            },
-                          ),
-                        ),
-                      );
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(availableVehiclesProvider);
                     },
-                    childCount: filteredVehicles.length,
-                  ),
-                ),
-              );
-            },
-            loading: () => SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      ),
+                    color: AppTheme.primaryColor,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      itemCount: filteredVehicles.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final vehicle = filteredVehicles[index];
+                        return VehicleCard(
+                          vehicle: vehicle,
+                          onTap: () {
+                            context.push('/vehicle/${vehicle.id}');
+                          },
+                        );
+                      },
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Chargement des véhicules...',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
+                loading: () => _buildLoadingState(),
+                error: (error, stack) => _buildErrorState(error.toString()),
               ),
             ),
-            error: (error, stack) => SliverFillRemaining(
-              child: _buildErrorState(error.toString()),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -268,35 +252,38 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
     final isSelected = value == _selectedCondition ||
         (value == null && _selectedCondition == null);
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedCondition = isSelected ? null : value;
+        });
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        child: FilterChip(
-          label: Text(label),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              _selectedCondition = selected ? value : null;
-            });
-          },
-          backgroundColor: Colors.white,
-          selectedColor: AppTheme.primaryColor,
-          checkmarkColor: Colors.white,
-          labelStyle: TextStyle(
-            color: isSelected ? Colors.white : AppTheme.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor : AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            width: isSelected ? 1.5 : 1,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          elevation: isSelected ? 4 : 0,
-          shadowColor: AppTheme.primaryColor.withOpacity(0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-              width: isSelected ? 0 : 1,
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : AppTheme.textSecondary,
           ),
         ),
       ),
@@ -315,7 +302,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
               height: 120,
               decoration: BoxDecoration(
                 color: AppTheme.backgroundColor,
-                borderRadius: BorderRadius.circular(60),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 Icons.search_off_rounded,
@@ -346,17 +333,43 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
                   _maxYear = null;
                 });
               },
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réinitialiser'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              label: const Text('Réinitialiser les filtres'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(20),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Chargement des véhicules...',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -372,13 +385,13 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppTheme.errorColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(60),
+                color: AppTheme.accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
                 size: 60,
-                color: AppTheme.errorColor,
+                color: AppTheme.accentColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -397,7 +410,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
               onPressed: () {
                 ref.invalidate(availableVehiclesProvider);
               },
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(Icons.refresh_rounded, size: 20),
               label: const Text('Réessayer'),
             ),
           ],
@@ -443,10 +456,10 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
         ),
         padding: EdgeInsets.only(
@@ -473,12 +486,25 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
 
               // Titre
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.filter_alt_rounded,
+                      color: AppTheme.primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Text(
                     'Filtres avancés',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
+                  const Spacer(),
                   TextButton.icon(
                     onPressed: () {
                       setState(() {
@@ -497,7 +523,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
 
               // Prix
               Text(
-                'Prix (TND)',
+                'Fourchette de prix (TND)',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
@@ -505,10 +531,9 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Min',
-                        prefixIcon: Icon(Icons.attach_money_rounded,
-                            color: AppTheme.primaryColor),
+                      decoration: const InputDecoration(
+                        labelText: 'Prix minimum',
+                        prefixIcon: Icon(Icons.payments_outlined),
                       ),
                       keyboardType: TextInputType.number,
                       onChanged: (value) {
@@ -519,10 +544,9 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Max',
-                        prefixIcon: Icon(Icons.attach_money_rounded,
-                            color: AppTheme.primaryColor),
+                      decoration: const InputDecoration(
+                        labelText: 'Prix maximum',
+                        prefixIcon: Icon(Icons.payments_outlined),
                       ),
                       keyboardType: TextInputType.number,
                       onChanged: (value) {
@@ -536,7 +560,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
 
               // Année
               Text(
-                'Année',
+                'Année de fabrication',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
@@ -544,10 +568,9 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Min',
-                        prefixIcon: Icon(Icons.calendar_today_rounded,
-                            color: AppTheme.primaryColor),
+                      decoration: const InputDecoration(
+                        labelText: 'Année min',
+                        prefixIcon: Icon(Icons.calendar_today_rounded),
                       ),
                       keyboardType: TextInputType.number,
                       onChanged: (value) {
@@ -558,10 +581,9 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Max',
-                        prefixIcon: Icon(Icons.calendar_today_rounded,
-                            color: AppTheme.primaryColor),
+                      decoration: const InputDecoration(
+                        labelText: 'Année max',
+                        prefixIcon: Icon(Icons.calendar_today_rounded),
                       ),
                       keyboardType: TextInputType.number,
                       onChanged: (value) {
@@ -582,7 +604,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen>
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text('Appliquer les filtres'),
                 ),
