@@ -310,11 +310,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             label: 'Accueil',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search_rounded),
-            label: 'Recherche',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline_rounded),
             activeIcon: Icon(Icons.chat_bubble_rounded),
             label: 'Messages',
@@ -331,11 +326,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard_rounded),
             label: 'Annonces',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search_rounded),
-            label: 'Recherche',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline_rounded),
@@ -359,11 +349,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard_rounded),
             label: 'Vendre',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search_rounded),
-            label: 'Recherche',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline_rounded),
