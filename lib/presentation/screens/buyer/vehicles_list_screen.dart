@@ -7,7 +7,7 @@ import '../../widgets/common/vehicle_card.dart';
 import 'vehicle_detail_screen.dart';  // ← AJOUTÉ
 
 class VehiclesListScreen extends ConsumerStatefulWidget {
-  const VehiclesListScreen({Key? key}) : super(key: key);
+  const VehiclesListScreen({super.key});
 
   @override
   ConsumerState<VehiclesListScreen> createState() => _VehiclesListScreenState();

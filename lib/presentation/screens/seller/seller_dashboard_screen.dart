@@ -8,6 +8,13 @@ import 'package:occazcar/presentation/screens/buyer/vehicle_detail_screen.dart';
 import 'package:occazcar/presentation/screens/seller/add_vehicle_screen.dart';
 import 'package:occazcar/presentation/screens/seller/edit_vehicle_screen.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../data/models/vehicle_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/vehicle_provider.dart';
+import '../buyer/vehicle_detail_screen.dart';
+import 'add_vehicle_screen.dart';
+import 'edit_vehicle_screen.dart';
 
 class SellerDashboardScreen extends ConsumerWidget {
   const SellerDashboardScreen({super.key});
