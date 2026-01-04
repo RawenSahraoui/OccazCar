@@ -7,61 +7,52 @@ import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Écouter l'état d'authentification
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: '/home',
-    debugLogDiagnostics: true,
+    initialLocation: '/login',
+    debugLogDiagnostics: false,
     redirect: (context, state) {
-      final isLoggedIn = authState.asData?.value != null;
-      final isLoggingIn = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
+      final isLoading = authState.isLoading;
+      final isLoggedIn = authState.value != null;
+      final currentPath = state.matchedLocation;
 
-      // Si pas connecté et pas sur une page d'auth -> rediriger vers login
-      if (!isLoggedIn && !isLoggingIn) {
+      // Pendant le chargement, ne rien faire
+      if (isLoading) {
+        return null;
+      }
+
+      final isAuthPage = currentPath == '/login' || currentPath == '/register';
+
+      // Si pas connecté et pas sur page auth -> login
+      if (!isLoggedIn && !isAuthPage) {
         return '/login';
       }
 
-      // Si connecté et sur une page d'auth -> rediriger vers home
-      if (isLoggedIn && isLoggingIn) {
+      // Si connecté et sur page auth -> home
+      if (isLoggedIn && isAuthPage) {
         return '/home';
       }
 
-      // Sinon, laisser passer
       return null;
     },
     routes: [
-      // 🔐 Auth Routes
       GoRoute(
         path: '/login',
         name: 'login',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const LoginScreen(),
-        ),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/register',
         name: 'register',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const RegisterScreen(),
-        ),
+        builder: (context, state) => const RegisterScreen(),
       ),
-
-      // 🏠 Home (avec navigation bottom bar intégrée)
       GoRoute(
         path: '/home',
         name: 'home',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: const HomeScreen(),
-        ),
+        builder: (context, state) => const HomeScreen(),
       ),
     ],
-
-    // Redirect si erreur
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: Column(
@@ -73,15 +64,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               'Page non trouvée',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 8),
-            Text(
-              state.uri.toString(),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.go('/login'),
-              child: const Text('Retour à la connexion'),
+              child: const Text('Retour'),
             ),
           ],
         ),
