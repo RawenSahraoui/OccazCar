@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../data/models/vehicle_model.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/vehicle_provider.dart';
-import '../../widgets/common/vehicle_card.dart';
-import '../buyer/vehicle_detail_screen.dart';
-import 'add_vehicle_screen.dart';
-import 'edit_vehicle_screen.dart';
+import 'package:occazcar/core/theme/app_theme.dart';
+import 'package:occazcar/data/models/vehicle_model.dart';
+import 'package:occazcar/presentation/providers/auth_provider.dart';
+import 'package:occazcar/presentation/providers/vehicle_provider.dart';
+import 'package:occazcar/presentation/screens/buyer/vehicle_detail_screen.dart';
+import 'package:occazcar/presentation/screens/seller/add_vehicle_screen.dart';
+import 'package:occazcar/presentation/screens/seller/edit_vehicle_screen.dart';
+
 
 class SellerDashboardScreen extends ConsumerWidget {
   const SellerDashboardScreen({super.key});
@@ -23,7 +23,7 @@ class SellerDashboardScreen extends ConsumerWidget {
       body: userAsync.when(
         data: (user) {
           if (user == null) {
-            return const Center(child: Text('Utilisateur non connecté'));
+            return const Center(child: Text('Utilisateur non connecte'));
           }
 
           final vehiclesAsync = ref.watch(
@@ -49,7 +49,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Publiez votre première annonce',
+                        'Publiez votre premiere annonce',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 24),
@@ -58,7 +58,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const AddVehicleScreen(),
+                              builder: (_) => AddVehicleScreen(),
                             ),
                           );
                         },
@@ -70,7 +70,6 @@ class SellerDashboardScreen extends ConsumerWidget {
                 );
               }
 
-              // Statistiques
               final availableCount = vehicles
                   .where((v) => v.status == VehicleStatus.available)
                   .length;
@@ -79,7 +78,6 @@ class SellerDashboardScreen extends ConsumerWidget {
 
               return Column(
                 children: [
-                  // Statistiques
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -114,7 +112,6 @@ class SellerDashboardScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  // Liste des véhicules
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -142,7 +139,7 @@ class SellerDashboardScreen extends ConsumerWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddVehicleScreen()),
+            MaterialPageRoute(builder: (_) => AddVehicleScreen()),
           );
         },
         icon: const Icon(Icons.add),
@@ -177,9 +174,9 @@ class _StatCard extends StatelessWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -215,32 +212,30 @@ class _SellerVehicleCard extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Miniature
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: vehicle.thumbnailUrl != null
+                child: vehicle.thumbnailUrl != null && vehicle.thumbnailUrl!.isNotEmpty
                     ? Image.network(
-                        vehicle.thumbnailUrl!,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.directions_car),
-                        ),
-                      )
+                  vehicle.thumbnailUrl!,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.directions_car),
+                  ),
+                )
                     : Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.directions_car),
-                      ),
+                  width: 80,
+                  height: 80,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.directions_car),
+                ),
               ),
               const SizedBox(width: 12),
 
-              // Informations
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,8 +271,8 @@ class _SellerVehicleCard extends ConsumerWidget {
                           vehicle.status == VehicleStatus.available
                               ? 'Disponible'
                               : vehicle.status == VehicleStatus.sold
-                                  ? 'Vendu'
-                                  : 'Réservé',
+                              ? 'Vendu'
+                              : 'Reserve',
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
@@ -286,171 +281,168 @@ class _SellerVehicleCard extends ConsumerWidget {
                 ),
               ),
 
-              // Menu
-              // Menu
-PopupMenuButton(
-  itemBuilder: (context) => [
-    const PopupMenuItem(
-      value: 'edit',
-      child: Row(
-        children: [
-          Icon(Icons.edit),
-          SizedBox(width: 8),
-          Text('Modifier'),
-        ],
-      ),
-    ),
-    if (vehicle.status == VehicleStatus.available)
-      const PopupMenuItem(
-        value: 'reserve',
-        child: Row(
-          children: [
-            Icon(Icons.schedule),
-            SizedBox(width: 8),
-            Text('Marquer comme réservé'),
-          ],
-        ),
-      ),
-    if (vehicle.status != VehicleStatus.sold)
-      const PopupMenuItem(
-        value: 'sold',
-        child: Row(
-          children: [
-            Icon(Icons.sell),
-            SizedBox(width: 8),
-            Text('Marquer comme vendu'),
-          ],
-        ),
-      ),
-    if (vehicle.status == VehicleStatus.sold)
-      const PopupMenuItem(
-        value: 'reactivate',
-        child: Row(
-          children: [
-            Icon(Icons.replay),
-            SizedBox(width: 8),
-            Text('Réactiver'),
-          ],
-        ),
-      ),
-    const PopupMenuItem(
-      value: 'delete',
-      child: Row(
-        children: [
-          Icon(Icons.delete, color: Colors.red),
-          SizedBox(width: 8),
-          Text('Supprimer', style: TextStyle(color: Colors.red)),
-        ],
-      ),
-    ),
-  ],
-  onSelected: (value) async {
-    switch (value) {
-      case 'edit':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EditVehicleScreen(vehicle: vehicle),
-          ),
-        );
-        break;
-      case 'reserve':
-        await ref
-            .read(updateVehicleStatusProvider.notifier)
-            .updateStatus(
-              vehicleId: vehicle.id,
-              newStatus: VehicleStatus.reserved,
-            );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Véhicule marqué comme réservé'),
-            ),
-          );
-        }
-        break;
-      case 'sold':
-        await ref
-            .read(updateVehicleStatusProvider.notifier)
-            .updateStatus(
-              vehicleId: vehicle.id,
-              newStatus: VehicleStatus.sold,
-            );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Véhicule marqué comme vendu'),
-            ),
-          );
-        }
-        break;
-      case 'reactivate':
-        await ref
-            .read(updateVehicleStatusProvider.notifier)
-            .updateStatus(
-              vehicleId: vehicle.id,
-              newStatus: VehicleStatus.available,
-            );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Véhicule réactivé'),
-            ),
-          );
-        }
-        break;
-      case 'delete':
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Supprimer l\'annonce'),
-            content: const Text(
-              'Êtes-vous sûr de vouloir supprimer cette annonce ? Cette action est irréversible.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                ),
-                child: const Text('Supprimer'),
-              ),
-            ],
-          ),
-        );
+              PopupMenuButton(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit),
+                        SizedBox(width: 8),
+                        Text('Modifier'),
+                      ],
+                    ),
+                  ),
+                  if (vehicle.status == VehicleStatus.available)
+                    const PopupMenuItem(
+                      value: 'reserve',
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule),
+                          SizedBox(width: 8),
+                          Text('Marquer comme reserve'),
+                        ],
+                      ),
+                    ),
+                  if (vehicle.status != VehicleStatus.sold)
+                    const PopupMenuItem(
+                      value: 'sold',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sell),
+                          SizedBox(width: 8),
+                          Text('Marquer comme vendu'),
+                        ],
+                      ),
+                    ),
+                  if (vehicle.status == VehicleStatus.sold)
+                    const PopupMenuItem(
+                      value: 'reactivate',
+                      child: Row(
+                        children: [
+                          Icon(Icons.replay),
+                          SizedBox(width: 8),
+                          Text('Reactiver'),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Supprimer', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) async {
+                  switch (value) {
+                    case 'edit':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditVehicleScreen(vehicle: vehicle),
+                        ),
+                      );
+                      break;
+                    case 'reserve':
+                      await ref
+                          .read(updateVehicleStatusProvider.notifier)
+                          .updateStatus(
+                        vehicleId: vehicle.id,
+                        newStatus: VehicleStatus.reserved,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Vehicule marque comme reserve'),
+                          ),
+                        );
+                      }
+                      break;
+                    case 'sold':
+                      await ref
+                          .read(updateVehicleStatusProvider.notifier)
+                          .updateStatus(
+                        vehicleId: vehicle.id,
+                        newStatus: VehicleStatus.sold,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Vehicule marque comme vendu'),
+                          ),
+                        );
+                      }
+                      break;
+                    case 'reactivate':
+                      await ref
+                          .read(updateVehicleStatusProvider.notifier)
+                          .updateStatus(
+                        vehicleId: vehicle.id,
+                        newStatus: VehicleStatus.available,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Vehicule reactive'),
+                          ),
+                        );
+                      }
+                      break;
+                    case 'delete':
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Supprimer l\'annonce'),
+                          content: const Text(
+                            'Etes-vous sur de vouloir supprimer cette annonce ? Cette action est irreversible.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Annuler'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              child: const Text('Supprimer'),
+                            ),
+                          ],
+                        ),
+                      );
 
-        if (confirm == true && context.mounted) {
-          // Show loading
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+                      if (confirm == true && context.mounted) {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
 
-          await ref
-              .read(deleteVehicleProvider.notifier)
-              .deleteVehicle(vehicle.id);
+                        await ref
+                            .read(deleteVehicleProvider.notifier)
+                            .deleteVehicle(vehicle.id);
 
-          if (context.mounted) {
-            Navigator.pop(context); // Close loading
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Annonce supprimée'),
-                backgroundColor: Colors.green,
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Annonce supprimee'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      }
+                      break;
+                  }
+                },
               ),
-            );
-          }
-        }
-        break;
-    }
-  },
-),
             ],
           ),
         ),

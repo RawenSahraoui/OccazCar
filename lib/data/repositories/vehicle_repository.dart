@@ -1,59 +1,78 @@
 import 'package:image_picker/image_picker.dart';
 import '../models/vehicle_model.dart';
 import '../services/firestore_service.dart';
-import '../services/storage_service.dart';
-import 'auth_repository.dart';
+import '../services/cloudinary_service.dart';  // ← CHANGÉ
+import '../services/alert_checker_service.dart';
+import '../../core/utils/result.dart';
 
 class VehicleRepository {
   final FirestoreService _firestoreService = FirestoreService();
-  final StorageService _storageService = StorageService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();  // ← CHANGÉ
+  final AlertCheckerService _alertChecker = AlertCheckerService();
 
-  // Créer un véhicule avec images
   Future<Result<String>> createVehicle({
     required VehicleModel vehicle,
     required List<XFile> images,
   }) async {
     try {
-      // 1. Créer le véhicule dans Firestore (sans images pour l'instant)
-      final vehicleId = await _firestoreService.createVehicle(vehicle);
+      print('🚀 Début création véhicule');
 
-      // 2. Upload les images
-      final imageUrls = await _storageService.uploadVehicleImages(
-        vehicleId: vehicleId,
-        imageFiles: images,
+      // 1. Créer le véhicule d'abord (Firebase Firestore)
+      final vehicleId = await _firestoreService.createVehicle(vehicle);
+      print('✅ Véhicule créé dans Firestore: $vehicleId');
+
+      // 2. Upload des images (Cloudinary)
+      List<String> imageUrls = [];
+      if (images.isNotEmpty) {
+        print('📤 Upload vers Cloudinary...');
+        imageUrls = await _cloudinaryService.uploadVehicleImages(  // ← CHANGÉ
+          vehicleId: vehicleId,
+          imageFiles: images,
+        );
+        print('✅ ${imageUrls.length} images uploadées sur Cloudinary');
+
+        // 3. Mettre à jour Firestore avec les URLs Cloudinary
+        await _firestoreService.updateVehicle(vehicleId, {
+          'imageUrls': imageUrls,
+          'thumbnailUrl': imageUrls.isNotEmpty ? imageUrls.first : null,
+        });
+        print('✅ URLs sauvegardées dans Firestore');
+      }
+
+      // 4. Véhicule complet
+      final updatedVehicle = vehicle.copyWith(
+        id: vehicleId,
+        imageUrls: imageUrls,
+        thumbnailUrl: imageUrls.isNotEmpty ? imageUrls.first : null,
       );
 
-      // 3. Mettre à jour le véhicule avec les URLs des images
-      await _firestoreService.updateVehicle(vehicleId, {
-        'imageUrls': imageUrls,
-        'thumbnailUrl': imageUrls.isNotEmpty ? imageUrls.first : null,
-      });
+      // 5. Vérifier les alertes
+      print('🔔 Vérification des alertes...');
+      await _alertChecker.checkAlertsForVehicle(updatedVehicle);
+      print('✅ Alertes vérifiées');
 
       return Result.success(vehicleId);
     } catch (e) {
-      return Result.error('Erreur lors de la création du véhicule: $e');
+      print('❌ Erreur: $e');
+      return Result.failure('Erreur lors de la création: $e');
     }
   }
 
-  // Récupérer un véhicule par ID
   Future<Result<VehicleModel>> getVehicleById(String vehicleId) async {
     try {
       final vehicle = await _firestoreService.getVehicleById(vehicleId);
-      
+
       if (vehicle == null) {
-        return Result.error('Véhicule non trouvé');
+        return Result.failure('Véhicule non trouvé');
       }
 
-      // Incrémenter le compteur de vues
       await _firestoreService.incrementViewCount(vehicleId);
-
       return Result.success(vehicle);
     } catch (e) {
-      return Result.error('Erreur lors de la récupération du véhicule: $e');
+      return Result.failure('Erreur: $e');
     }
   }
 
-  // Récupérer tous les véhicules (avec filtres)
   Stream<List<VehicleModel>> getVehicles({
     String? brand,
     int? minYear,
@@ -76,25 +95,21 @@ class VehicleRepository {
     );
   }
 
-  // Récupérer les véhicules d'un vendeur
   Stream<List<VehicleModel>> getSellerVehicles(String sellerId) {
     return _firestoreService.getVehiclesBySeller(sellerId);
   }
 
-  // Mettre à jour un véhicule
   Future<Result<void>> updateVehicle({
     required String vehicleId,
     required Map<String, dynamic> updates,
     List<XFile>? newImages,
   }) async {
     try {
-      // Si de nouvelles images sont fournies, les uploader
       if (newImages != null && newImages.isNotEmpty) {
-        final imageUrls = await _storageService.uploadVehicleImages(
+        final imageUrls = await _cloudinaryService.uploadVehicleImages(  // ← CHANGÉ
           vehicleId: vehicleId,
           imageFiles: newImages,
         );
-        
         updates['imageUrls'] = imageUrls;
         updates['thumbnailUrl'] = imageUrls.first;
       }
@@ -102,26 +117,20 @@ class VehicleRepository {
       await _firestoreService.updateVehicle(vehicleId, updates);
       return Result.success(null);
     } catch (e) {
-      return Result.error('Erreur lors de la mise à jour: $e');
+      return Result.failure('Erreur: $e');
     }
   }
 
-  // Supprimer un véhicule
   Future<Result<void>> deleteVehicle(String vehicleId) async {
     try {
-      // Supprimer les images
-      await _storageService.deleteVehicleImages(vehicleId);
-      
-      // Supprimer le véhicule
+      // Note: Suppression manuelle des images Cloudinary (optionnel)
       await _firestoreService.deleteVehicle(vehicleId);
-      
       return Result.success(null);
     } catch (e) {
-      return Result.error('Erreur lors de la suppression: $e');
+      return Result.failure('Erreur: $e');
     }
   }
 
-  // Changer le statut d'un véhicule
   Future<Result<void>> updateVehicleStatus({
     required String vehicleId,
     required VehicleStatus newStatus,
@@ -132,21 +141,10 @@ class VehicleRepository {
       });
       return Result.success(null);
     } catch (e) {
-      return Result.error('Erreur lors du changement de statut: $e');
+      return Result.failure('Erreur: $e');
     }
   }
 
-  // Rechercher des véhicules
-  Future<Result<List<VehicleModel>>> searchVehicles(String searchTerm) async {
-    try {
-      final results = await _firestoreService.searchVehicles(searchTerm);
-      return Result.success(results);
-    } catch (e) {
-      return Result.error('Erreur lors de la recherche: $e');
-    }
-  }
-
-  // Marquer un véhicule comme vendu
   Future<Result<void>> markAsSold(String vehicleId) async {
     return updateVehicleStatus(
       vehicleId: vehicleId,
@@ -154,11 +152,19 @@ class VehicleRepository {
     );
   }
 
-  // Réactiver un véhicule
   Future<Result<void>> reactivateVehicle(String vehicleId) async {
     return updateVehicleStatus(
       vehicleId: vehicleId,
       newStatus: VehicleStatus.available,
     );
+  }
+
+  Future<Result<List<VehicleModel>>> searchVehicles(String searchTerm) async {
+    try {
+      final results = await _firestoreService.searchVehicles(searchTerm);
+      return Result.success(results);
+    } catch (e) {
+      return Result.failure('Erreur: $e');
+    }
   }
 }

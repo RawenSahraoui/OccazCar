@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -61,16 +64,9 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       setState(() {
         _images.addAll(images);
         if (_images.length > AppConstants.maxVehicleImages) {
-          _images.removeRange(
-            AppConstants.maxVehicleImages,
-            _images.length,
-          );
+          _images.removeRange(AppConstants.maxVehicleImages, _images.length);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Maximum ${AppConstants.maxVehicleImages} images',
-              ),
-            ),
+            SnackBar(content: Text('Maximum ${AppConstants.maxVehicleImages} images')),
           );
         }
       });
@@ -93,23 +89,45 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     if (_selectedCity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez sélectionner une ville'),
+          content: Text('Veuillez selectionner une ville'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    // ✅ Afficher dialog de chargement AVANT de commencer
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('Publication en cours...'),
+              const SizedBox(height: 8),
+              Text(
+                'Upload des images (${_images.length})',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
     final user = await ref.read(currentUserProvider.future);
     if (user == null) {
       if (mounted) {
+        Navigator.pop(context); // Fermer le dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Utilisateur non connecté')),
+          const SnackBar(content: Text('Utilisateur non connecte')),
         );
       }
-      setState(() => _isLoading = false);
       return;
     }
 
@@ -140,371 +158,224 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       updatedAt: DateTime.now(),
     );
 
+    // ✅ Créer le véhicule (upload inclus)
     final vehicleId = await ref.read(createVehicleProvider.notifier).createVehicle(
-          vehicle: vehicle,
-          images: _images,
+      vehicle: vehicle,
+      images: _images,
+    );
+
+    if (mounted) {
+      Navigator.pop(context); // Fermer le dialog de chargement
+
+      if (vehicleId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Annonce publiee avec succes'),
+            backgroundColor: Colors.green,
+          ),
         );
-
-    setState(() => _isLoading = false);
-
-    if (vehicleId != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Annonce publiée avec succès !'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
-    } else if (mounted) {
-      final error = ref.read(createVehicleProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error?.toString() ?? 'Erreur lors de la publication'),
-          backgroundColor: Colors.red,
-        ),
-      );
+        Navigator.pop(context); // Retour à l'écran précédent
+      } else {
+        final error = ref.read(createVehicleProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur: ${error?.toString() ?? "Erreur inconnue"}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Publier une annonce'),
-      ),
+      appBar: AppBar(title: const Text('Publier une annonce')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Photos
-            Text(
-              'Photos du véhicule *',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Photos du vehicule *', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             _buildImagesSection(),
             const SizedBox(height: 24),
 
-            // Informations de base
-            Text(
-              'Informations de base',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Informations de base', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
-            // Marque
             DropdownButtonFormField<String>(
               value: _selectedBrand,
-              decoration: const InputDecoration(
-                labelText: 'Marque *',
-                prefixIcon: Icon(Icons.directions_car),
-              ),
-              items: AppConstants.carBrands.map((brand) {
-                return DropdownMenuItem(value: brand, child: Text(brand));
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedBrand = value);
-              },
-              validator: (value) =>
-                  Validators.validateRequired(value, 'La marque'),
+              decoration: const InputDecoration(labelText: 'Marque *', prefixIcon: Icon(Icons.directions_car)),
+              items: AppConstants.carBrands.map((brand) => DropdownMenuItem(value: brand, child: Text(brand))).toList(),
+              onChanged: (value) => setState(() => _selectedBrand = value),
+              validator: (value) => Validators.validateRequired(value, 'La marque'),
             ),
             const SizedBox(height: 16),
 
-            // Modèle
             TextFormField(
               controller: _modelController,
-              decoration: const InputDecoration(
-                labelText: 'Modèle *',
-                prefixIcon: Icon(Icons.car_rental),
-              ),
-              validator: (value) =>
-                  Validators.validateRequired(value, 'Le modèle'),
+              decoration: const InputDecoration(labelText: 'Modele *', prefixIcon: Icon(Icons.car_rental)),
+              validator: (value) => Validators.validateRequired(value, 'Le modele'),
             ),
             const SizedBox(height: 16),
 
-            // Année et Kilométrage
             Row(
               children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _yearController,
-                    decoration: const InputDecoration(
-                      labelText: 'Année *',
-                      prefixIcon: Icon(Icons.calendar_today),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: Validators.validateYear,
-                  ),
-                ),
+                Expanded(child: TextFormField(
+                  controller: _yearController,
+                  decoration: const InputDecoration(labelText: 'Annee *', prefixIcon: Icon(Icons.calendar_today)),
+                  keyboardType: TextInputType.number,
+                  validator: Validators.validateYear,
+                )),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _mileageController,
-                    decoration: const InputDecoration(
-                      labelText: 'Kilométrage *',
-                      prefixIcon: Icon(Icons.speed),
-                      suffixText: 'km',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: Validators.validateMileage,
-                  ),
-                ),
+                Expanded(child: TextFormField(
+                  controller: _mileageController,
+                  decoration: const InputDecoration(labelText: 'Kilometrage *', prefixIcon: Icon(Icons.speed), suffixText: 'km'),
+                  keyboardType: TextInputType.number,
+                  validator: Validators.validateMileage,
+                )),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Prix
             TextFormField(
               controller: _priceController,
-              decoration: const InputDecoration(
-                labelText: 'Prix *',
-                prefixIcon: Icon(Icons.attach_money),
-                suffixText: 'TND',
-              ),
+              decoration: const InputDecoration(labelText: 'Prix *', prefixIcon: Icon(Icons.attach_money), suffixText: 'TND'),
               keyboardType: TextInputType.number,
               validator: Validators.validatePrice,
             ),
             const SizedBox(height: 24),
 
-            // Détails techniques
-            Text(
-              'Détails techniques',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Details techniques', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
-            // Carburant
             DropdownButtonFormField<FuelType>(
               value: _fuelType,
-              decoration: const InputDecoration(
-                labelText: 'Type de carburant *',
-                prefixIcon: Icon(Icons.local_gas_station),
-              ),
-              items: FuelType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getFuelTypeLabel(type)),
-                );
-              }).toList(),
+              decoration: const InputDecoration(labelText: 'Type de carburant *', prefixIcon: Icon(Icons.local_gas_station)),
+              items: FuelType.values.map((type) => DropdownMenuItem(value: type, child: Text(_getFuelTypeLabel(type)))).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _fuelType = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Transmission
             DropdownButtonFormField<TransmissionType>(
               value: _transmission,
-              decoration: const InputDecoration(
-                labelText: 'Transmission *',
-                prefixIcon: Icon(Icons.settings),
-              ),
-              items: TransmissionType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getTransmissionLabel(type)),
-                );
-              }).toList(),
+              decoration: const InputDecoration(labelText: 'Transmission *', prefixIcon: Icon(Icons.settings)),
+              items: TransmissionType.values.map((type) => DropdownMenuItem(value: type, child: Text(_getTransmissionLabel(type)))).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _transmission = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Cylindrée et Puissance
             Row(
               children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _engineSizeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Cylindrée',
-                      prefixIcon: Icon(Icons.build),
-                      suffixText: 'cc',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
+                Expanded(child: TextFormField(
+                  controller: _engineSizeController,
+                  decoration: const InputDecoration(labelText: 'Cylindree', prefixIcon: Icon(Icons.build), suffixText: 'cc'),
+                  keyboardType: TextInputType.number,
+                )),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _horsePowerController,
-                    decoration: const InputDecoration(
-                      labelText: 'Puissance',
-                      prefixIcon: Icon(Icons.speed),
-                      suffixText: 'ch',
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
+                Expanded(child: TextFormField(
+                  controller: _horsePowerController,
+                  decoration: const InputDecoration(labelText: 'Puissance', prefixIcon: Icon(Icons.speed), suffixText: 'ch'),
+                  keyboardType: TextInputType.number,
+                )),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Couleur
             TextFormField(
               controller: _colorController,
-              decoration: const InputDecoration(
-                labelText: 'Couleur',
-                prefixIcon: Icon(Icons.palette),
-              ),
+              decoration: const InputDecoration(labelText: 'Couleur', prefixIcon: Icon(Icons.palette)),
             ),
             const SizedBox(height: 24),
 
-            // État et condition
-            Text(
-              'État du véhicule',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Etat du vehicule', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
-            // Condition
             DropdownButtonFormField<VehicleCondition>(
               value: _condition,
-              decoration: const InputDecoration(
-                labelText: 'État général *',
-                prefixIcon: Icon(Icons.check_circle),
-              ),
-              items: VehicleCondition.values.map((condition) {
-                return DropdownMenuItem(
-                  value: condition,
-                  child: Text(_getConditionLabel(condition)),
-                );
-              }).toList(),
+              decoration: const InputDecoration(labelText: 'Etat general *', prefixIcon: Icon(Icons.check_circle)),
+              items: VehicleCondition.values.map((c) => DropdownMenuItem(value: c, child: Text(_getConditionLabel(c)))).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _condition = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Nombre de propriétaires
             DropdownButtonFormField<int>(
               value: _numberOfOwners,
-              decoration: const InputDecoration(
-                labelText: 'Nombre de propriétaires',
-                prefixIcon: Icon(Icons.person),
-              ),
-              items: List.generate(5, (index) => index + 1).map((num) {
-                return DropdownMenuItem(
-                  value: num,
-                  child: Text(num == 1 ? '1er propriétaire' : '$num propriétaires'),
-                );
-              }).toList(),
+              decoration: const InputDecoration(labelText: 'Nombre de proprietaires', prefixIcon: Icon(Icons.person)),
+              items: List.generate(5, (i) => i + 1).map((num) => DropdownMenuItem(value: num, child: Text(num == 1 ? '1er proprietaire' : '$num proprietaires'))).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _numberOfOwners = value);
               },
             ),
             const SizedBox(height: 16),
 
-            // Accidents
             SwitchListTile(
               title: const Text('A eu des accidents'),
               value: _hasAccidents,
-              onChanged: (value) {
-                setState(() => _hasAccidents = value);
-              },
+              onChanged: (value) => setState(() => _hasAccidents = value),
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 24),
 
-            // Description
-            Text(
-              'Description',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Description', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description du véhicule *',
-                alignLabelWithHint: true,
-                hintText: 'Décrivez votre véhicule en détail...',
-              ),
+              decoration: const InputDecoration(labelText: 'Description du vehicule *', alignLabelWithHint: true, hintText: 'Decrivez votre vehicule'),
               maxLines: 5,
               validator: Validators.validateDescription,
             ),
             const SizedBox(height: 24),
 
-            // Caractéristiques
-            Text(
-              'Caractéristiques',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Caracteristiques', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: AppConstants.commonFeatures.map((feature) {
-                final isSelected = _selectedFeatures.contains(feature);
+              children: AppConstants.commonFeatures.map((f) {
+                final selected = _selectedFeatures.contains(f);
                 return FilterChip(
-                  label: Text(feature),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedFeatures.add(feature);
-                      } else {
-                        _selectedFeatures.remove(feature);
-                      }
-                    });
-                  },
+                  label: Text(f),
+                  selected: selected,
+                  onSelected: (s) => setState(() => s ? _selectedFeatures.add(f) : _selectedFeatures.remove(f)),
                   selectedColor: AppTheme.primaryColor.withOpacity(0.3),
                 );
               }).toList(),
             ),
             const SizedBox(height: 24),
 
-            // Localisation
-            Text(
-              'Localisation',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Localisation', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
               value: _selectedCity,
-              decoration: const InputDecoration(
-                labelText: 'Ville *',
-                prefixIcon: Icon(Icons.location_city),
-              ),
-              items: AppConstants.tunisianCities.map((city) {
-                return DropdownMenuItem(value: city, child: Text(city));
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedCity = value);
-              },
-              validator: (value) =>
-                  Validators.validateRequired(value, 'La ville'),
+              decoration: const InputDecoration(labelText: 'Ville *', prefixIcon: Icon(Icons.location_city)),
+              items: AppConstants.tunisianCities.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: (value) => setState(() => _selectedCity = value),
+              validator: (value) => Validators.validateRequired(value, 'La ville'),
             ),
             const SizedBox(height: 16),
 
             TextFormField(
               controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Adresse (optionnel)',
-                prefixIcon: Icon(Icons.location_on),
-              ),
+              decoration: const InputDecoration(labelText: 'Adresse (optionnel)', prefixIcon: Icon(Icons.location_on)),
             ),
             const SizedBox(height: 32),
 
-            // Bouton Publier
             ElevatedButton(
               onPressed: _isLoading ? null : _submitForm,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
               child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Publier l\'annonce'),
             ),
             const SizedBox(height: 16),
@@ -524,9 +395,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               scrollDirection: Axis.horizontal,
               itemCount: _images.length + 1,
               itemBuilder: (context, index) {
-                if (index == _images.length) {
-                  return _buildAddImageButton();
-                }
+                if (index == _images.length) return _buildAddImageButton();
                 return _buildImagePreview(_images[index], index);
               },
             ),
@@ -544,19 +413,13 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
         width: 120,
         height: 120,
         margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primaryColor, width: 2),
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(border: Border.all(color: AppTheme.primaryColor, width: 2), borderRadius: BorderRadius.circular(12)),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.add_photo_alternate, size: 40, color: AppTheme.primaryColor),
             const SizedBox(height: 8),
-            Text(
-              'Ajouter',
-              style: TextStyle(color: AppTheme.primaryColor),
-            ),
+            Text('Ajouter', style: TextStyle(color: AppTheme.primaryColor)),
           ],
         ),
       ),
@@ -572,30 +435,24 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              image.path,
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey[300],
-                child: const Icon(Icons.image),
-              ),
-            ),
+            child: kIsWeb
+                ? FutureBuilder<Uint8List>(
+              future: image.readAsBytes(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) return Image.memory(snapshot.data!, width: 120, height: 120, fit: BoxFit.cover);
+                return Container(color: Colors.grey[300], child: const Center(child: CircularProgressIndicator()));
+              },
+            )
+                : Image.file(File(image.path), width: 120, height: 120, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Colors.grey[300], child: const Icon(Icons.image))),
           ),
           Positioned(
             top: 4,
             right: 4,
             child: GestureDetector(
-              onTap: () {
-                setState(() => _images.removeAt(index));
-              },
+              onTap: () => setState(() => _images.removeAt(index)),
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                 child: const Icon(Icons.close, size: 16, color: Colors.white),
               ),
             ),
@@ -607,40 +464,28 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
   String _getFuelTypeLabel(FuelType type) {
     switch (type) {
-      case FuelType.gasoline:
-        return 'Essence';
-      case FuelType.diesel:
-        return 'Diesel';
-      case FuelType.electric:
-        return 'Électrique';
-      case FuelType.hybrid:
-        return 'Hybride';
-      case FuelType.other:
-        return 'Autre';
+      case FuelType.gasoline: return 'Essence';
+      case FuelType.diesel: return 'Diesel';
+      case FuelType.electric: return 'Electrique';
+      case FuelType.hybrid: return 'Hybride';
+      case FuelType.other: return 'Autre';
     }
   }
 
   String _getTransmissionLabel(TransmissionType type) {
     switch (type) {
-      case TransmissionType.manual:
-        return 'Manuelle';
-      case TransmissionType.automatic:
-        return 'Automatique';
-      case TransmissionType.semiAutomatic:
-        return 'Semi-automatique';
+      case TransmissionType.manual: return 'Manuelle';
+      case TransmissionType.automatic: return 'Automatique';
+      case TransmissionType.semiAutomatic: return 'Semi-automatique';
     }
   }
 
   String _getConditionLabel(VehicleCondition condition) {
     switch (condition) {
-      case VehicleCondition.excellent:
-        return 'Excellent';
-      case VehicleCondition.good:
-        return 'Bon';
-      case VehicleCondition.fair:
-        return 'Moyen';
-      case VehicleCondition.poor:
-        return 'Mauvais';
+      case VehicleCondition.excellent: return 'Excellent';
+      case VehicleCondition.good: return 'Bon';
+      case VehicleCondition.fair: return 'Moyen';
+      case VehicleCondition.poor: return 'Mauvais';
     }
   }
 }
