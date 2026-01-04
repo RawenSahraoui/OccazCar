@@ -84,25 +84,18 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
     if (_images.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez ajouter au moins une photo'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Veuillez ajouter au moins une photo'), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (_selectedCity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez selectionner une ville'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Veuillez selectionner une ville'), backgroundColor: Colors.red),
       );
       return;
     }
 
-    // ✅ Afficher dialog de chargement AVANT de commencer
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -116,10 +109,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               const SizedBox(height: 16),
               const Text('Publication en cours...'),
               const SizedBox(height: 8),
-              Text(
-                'Upload des images (${_images.length})',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text('Upload des images (${_images.length})', style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
@@ -129,10 +119,8 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     final user = await ref.read(currentUserProvider.future);
     if (user == null) {
       if (mounted) {
-        Navigator.pop(context); // Fermer le dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Utilisateur non connecte')),
-        );
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Utilisateur non connecte')));
       }
       return;
     }
@@ -164,53 +152,23 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       updatedAt: DateTime.now(),
     );
 
-    // ✅ Créer le véhicule (upload inclus)
-    final vehicleId = await ref.read(createVehicleProvider.notifier).createVehicle(
-      vehicle: vehicle,
-      images: _images,
-    );
+    final vehicleId = await ref.read(createVehicleProvider.notifier).createVehicle(vehicle: vehicle, images: _images);
 
     if (mounted) {
-      Navigator.pop(context); // Fermer le dialog de chargement
+      Navigator.pop(context);
 
       if (vehicleId != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Annonce publiee avec succes'),
-            backgroundColor: Colors.green,
-          ),
+          const SnackBar(content: Text('Annonce publiee avec succes'), backgroundColor: Colors.green),
         );
-        Navigator.pop(context); // Retour à l'écran précédent
+        ref.read(damageReportProvider.notifier).reset();
+        Navigator.pop(context);
       } else {
         final error = ref.read(createVehicleProvider).error;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Erreur: ${error?.toString() ?? "Erreur inconnue"}'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Erreur: ${error?.toString() ?? "Erreur inconnue"}'), backgroundColor: Colors.red),
         );
       }
-
-    setState(() => _isLoading = false);
-
-    if (vehicleId != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Annonce publiée avec succès !'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      // 🔥 RÉINITIALISER LE RAPPORT DE DOMMAGES APRÈS PUBLICATION
-      ref.read(damageReportProvider.notifier).reset();
-      Navigator.pop(context);
-    } else if (mounted) {
-      final error = ref.read(createVehicleProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error?.toString() ?? 'Erreur lors de la publication'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -237,19 +195,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               items: AppConstants.carBrands.map((brand) => DropdownMenuItem(value: brand, child: Text(brand))).toList(),
               onChanged: (value) => setState(() => _selectedBrand = value),
               validator: (value) => Validators.validateRequired(value, 'La marque'),
-              initialValue: _selectedBrand,
-              decoration: const InputDecoration(
-                labelText: 'Marque *',
-                prefixIcon: Icon(Icons.directions_car),
-              ),
-              items: AppConstants.carBrands.map((brand) {
-                return DropdownMenuItem(value: brand, child: Text(brand));
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedBrand = value);
-              },
-              validator: (value) =>
-                  Validators.validateRequired(value, 'La marque'),
             ),
             const SizedBox(height: 16),
 
@@ -294,17 +239,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               value: _fuelType,
               decoration: const InputDecoration(labelText: 'Type de carburant *', prefixIcon: Icon(Icons.local_gas_station)),
               items: FuelType.values.map((type) => DropdownMenuItem(value: type, child: Text(_getFuelTypeLabel(type)))).toList(),
-              initialValue: _fuelType,
-              decoration: const InputDecoration(
-                labelText: 'Type de carburant *',
-                prefixIcon: Icon(Icons.local_gas_station),
-              ),
-              items: FuelType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getFuelTypeLabel(type)),
-                );
-              }).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _fuelType = value);
               },
@@ -315,17 +249,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               value: _transmission,
               decoration: const InputDecoration(labelText: 'Transmission *', prefixIcon: Icon(Icons.settings)),
               items: TransmissionType.values.map((type) => DropdownMenuItem(value: type, child: Text(_getTransmissionLabel(type)))).toList(),
-              initialValue: _transmission,
-              decoration: const InputDecoration(
-                labelText: 'Transmission *',
-                prefixIcon: Icon(Icons.settings),
-              ),
-              items: TransmissionType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getTransmissionLabel(type)),
-                );
-              }).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _transmission = value);
               },
@@ -362,17 +285,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               value: _condition,
               decoration: const InputDecoration(labelText: 'Etat general *', prefixIcon: Icon(Icons.check_circle)),
               items: VehicleCondition.values.map((c) => DropdownMenuItem(value: c, child: Text(_getConditionLabel(c)))).toList(),
-              initialValue: _condition,
-              decoration: const InputDecoration(
-                labelText: 'État général *',
-                prefixIcon: Icon(Icons.check_circle),
-              ),
-              items: VehicleCondition.values.map((condition) {
-                return DropdownMenuItem(
-                  value: condition,
-                  child: Text(_getConditionLabel(condition)),
-                );
-              }).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _condition = value);
               },
@@ -383,17 +295,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               value: _numberOfOwners,
               decoration: const InputDecoration(labelText: 'Nombre de proprietaires', prefixIcon: Icon(Icons.person)),
               items: List.generate(5, (i) => i + 1).map((num) => DropdownMenuItem(value: num, child: Text(num == 1 ? '1er proprietaire' : '$num proprietaires'))).toList(),
-              initialValue: _numberOfOwners,
-              decoration: const InputDecoration(
-                labelText: 'Nombre de propriétaires',
-                prefixIcon: Icon(Icons.person),
-              ),
-              items: List.generate(5, (index) => index + 1).map((num) {
-                return DropdownMenuItem(
-                  value: num,
-                  child: Text(num == 1 ? '1er propriétaire' : '$num propriétaires'),
-                );
-              }).toList(),
               onChanged: (value) {
                 if (value != null) setState(() => _numberOfOwners = value);
               },
@@ -403,30 +304,18 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             SwitchListTile(
               title: const Text('A eu des accidents'),
               value: _hasAccidents,
-              onChanged: (value) => setState(() => _hasAccidents = value),
-            // Accidents -  MODIFIÉ POUR SYNCHRONISER AVEC LE DAMAGE REPORT
-            SwitchListTile(
-              title: const Text('A eu des accidents'),
-              value: _hasAccidents,
               onChanged: (value) {
                 setState(() => _hasAccidents = value);
-                // Synchroniser avec le damage report provider
                 ref.read(damageReportProvider.notifier).setAccidentHistory(value);
               },
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 24),
 
-            Text('Description', style: Theme.of(context).textTheme.titleLarge),
-            // SECTION AI DAMAGE REPORT - NOUVELLE SECTION 
             _buildAiDamageReportSection(),
             const SizedBox(height: 24),
 
-            // Description
-            Text(
-              'Description',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Description', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
 
             Consumer(
@@ -435,12 +324,11 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     icon: const Icon(Icons.auto_awesome),
-                    label: const Text('Générer avec l\'IA'),
+                    label: const Text('Generer avec l\'IA'),
                     onPressed: () {
                       final aiService = ref.read(aiDescriptionServiceProvider);
-
                       final generatedDescription = aiService.generateDescription(
-                        brand: _selectedBrand ?? 'Véhicule',
+                        brand: _selectedBrand ?? 'Vehicule',
                         model: _modelController.text,
                         year: int.tryParse(_yearController.text) ?? DateTime.now().year,
                         mileage: int.tryParse(_mileageController.text) ?? 0,
@@ -449,7 +337,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                         condition: _getConditionLabel(_condition),
                         city: _selectedCity ?? 'Tunisie',
                       );
-
                       _descriptionController.text = generatedDescription;
                     },
                   ),
@@ -493,19 +380,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               items: AppConstants.tunisianCities.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
               onChanged: (value) => setState(() => _selectedCity = value),
               validator: (value) => Validators.validateRequired(value, 'La ville'),
-              initialValue: _selectedCity,
-              decoration: const InputDecoration(
-                labelText: 'Ville *',
-                prefixIcon: Icon(Icons.location_city),
-              ),
-              items: AppConstants.tunisianCities.map((city) {
-                return DropdownMenuItem(value: city, child: Text(city));
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedCity = value);
-              },
-              validator: (value) =>
-                  Validators.validateRequired(value, 'La ville'),
             ),
             const SizedBox(height: 16),
 
@@ -542,6 +416,24 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                 if (index == _images.length) return _buildAddImageButton();
                 return _buildImagePreview(_images[index], index);
               },
+            ),
+          )
+        else
+          _buildAddImageButton(),
+        if (_images.isNotEmpty)
+          AiImageEnhancementButton(
+            images: _images,
+            onImagesEnhanced: (enhancedImages) {
+              setState(() {
+                _images.clear();
+                _images.addAll(enhancedImages);
+              });
+            },
+          ),
+      ],
+    );
+  }
+
   Widget _buildAiDamageReportSection() {
     return Consumer(
       builder: (context, ref, _) {
@@ -551,15 +443,12 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
         return Card(
           elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // En-tête
                 Row(
                   children: [
                     Container(
@@ -568,90 +457,42 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                         color: AppTheme.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        Icons.auto_awesome,
-                        color: AppTheme.primaryColor,
-                      ),
+                      child: Icon(Icons.auto_awesome, color: AppTheme.primaryColor),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Rapport de dommages IA',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Transparence = Confiance des acheteurs',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
+                          const Text('Rapport de dommages IA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text('Transparence = Confiance des acheteurs', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                         ],
                       ),
                     ),
                     if (totalDamages > 0)
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$totalDamages dommage${totalDamages > 1 ? 's' : ''}',
-                          style: TextStyle(
-                            color: Colors.orange.shade900,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(20)),
+                        child: Text('$totalDamages dommage${totalDamages > 1 ? 's' : ''}', style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // Description
-                Text(
-                  'Déclarez les dommages pour générer un rapport professionnel IA qui renforce la confiance des acheteurs.',
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 14,
-                  ),
-                ),
+                Text('Declarez les dommages pour generer un rapport professionnel IA qui renforce la confiance des acheteurs.', style: TextStyle(color: Colors.grey[700], fontSize: 14)),
                 const SizedBox(height: 16),
 
-                // Aperçu du rapport si généré
                 if (damageState.generatedReport != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
+                    decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green.shade200)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.check_circle,
-                                color: Colors.green.shade700, size: 20),
+                            Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Rapport généré',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
+                            const Text('Rapport genere', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -662,59 +503,32 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   const SizedBox(height: 12),
                 ],
 
-                // Boutons d'action
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _openDamageReportDialog(),
                         icon: const Icon(Icons.edit_note),
-                        label: Text(
-                          totalDamages > 0
-                              ? 'Modifier dommages'
-                              : 'Ajouter dommages',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
+                        label: Text(totalDamages > 0 ? 'Modifier dommages' : 'Ajouter dommages'),
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: canGenerate && !damageState.isGenerating
-                            ? () {
-                                ref
-                                    .read(damageReportProvider.notifier)
-                                    .generateReport();
-                              }
+                            ? () => ref.read(damageReportProvider.notifier).generateReport()
                             : null,
                         icon: damageState.isGenerating
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.analytics),
-                        label: Text(
-                          damageState.generatedReport != null
-                              ? 'Régénérer'
-                              : 'Générer IA',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
+                        label: Text(damageState.generatedReport != null ? 'Regenerer' : 'Generer IA'),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
                       ),
                     ),
                   ],
                 ),
 
-                // Bouton pour insérer le rapport
                 if (damageState.generatedReport != null) ...[
                   const SizedBox(height: 12),
                   SizedBox(
@@ -722,12 +536,8 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _insertReportIntoDescription(),
                       icon: const Icon(Icons.note_add),
-                      label: const Text('Insérer le rapport dans la description'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        foregroundColor: Colors.green,
-                        side: BorderSide(color: Colors.green.shade300),
-                      ),
+                      label: const Text('Inserer le rapport dans la description'),
+                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12), foregroundColor: Colors.green, side: BorderSide(color: Colors.green.shade300)),
                     ),
                   ),
                 ],
@@ -739,28 +549,15 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     );
   }
 
-  // 🔥 NOUVELLE MÉTHODE - Afficher les métriques du rapport
   Widget _buildReportMetrics(AiDamageReport report) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildMetricItem(
-          'Note',
-          report.conditionGrade,
-          _getGradeColor(report.conditionGrade),
-        ),
+        _buildMetricItem('Note', report.conditionGrade, _getGradeColor(report.conditionGrade)),
         Container(width: 1, height: 30, color: Colors.grey[300]),
-        _buildMetricItem(
-          'Impact',
-          '-${report.estimatedValueImpact.toStringAsFixed(1)}%',
-          Colors.orange,
-        ),
+        _buildMetricItem('Impact', '-${report.estimatedValueImpact.toStringAsFixed(1)}%', Colors.orange),
         Container(width: 1, height: 30, color: Colors.grey[300]),
-        _buildMetricItem(
-          'Risque',
-          report.riskLevel,
-          _getRiskColor(report.riskLevel),
-        ),
+        _buildMetricItem('Risque', report.riskLevel, _getRiskColor(report.riskLevel)),
       ],
     );
   }
@@ -768,22 +565,9 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   Widget _buildMetricItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
       ],
     );
   }
@@ -811,15 +595,10 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     }
   }
 
-  // 🔥 NOUVELLE MÉTHODE - Ouvrir le dialogue d'ajout de dommages
   void _openDamageReportDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => _DamageReportDialog(),
-    );
+    showDialog(context: context, builder: (dialogContext) => _DamageReportDialog());
   }
 
-  // 🔥 NOUVELLE MÉTHODE - Insérer le rapport dans la description
   void _insertReportIntoDescription() {
     final report = ref.read(damageReportProvider).generatedReport;
     if (report == null) return;
@@ -827,55 +606,14 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     final service = ref.read(aiDamageServiceProvider);
     final reportText = service.formatReportAsText(report);
 
-    // Insérer à la fin de la description existante
     final currentDesc = _descriptionController.text;
     final separator = currentDesc.isNotEmpty ? '\n\n' : '';
     _descriptionController.text = '$currentDesc$separator$reportText';
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✓ Rapport IA inséré dans la description'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
+      const SnackBar(content: Text('Rapport IA insere dans la description'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
     );
   }
-
- Widget _buildImagesSection() {
-  return Column(
-    children: [
-      if (_images.isNotEmpty)
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _images.length + 1,
-            itemBuilder: (context, index) {
-              if (index == _images.length) {
-                return _buildAddImageButton();
-              }
-              return _buildImagePreview(_images[index], index);
-            },
-          ),
-        )
-      else
-        _buildAddImageButton(),
-
-      if (_images.isNotEmpty)
-        AiImageEnhancementButton(
-          images: _images,
-          onImagesEnhanced: (enhancedImages) {
-            setState(() {
-              _images
-                ..clear()
-                ..addAll(enhancedImages);
-            });
-          },
-        ),
-    ],
-  );
-}
-
 
   Widget _buildAddImageButton() {
     return InkWell(
@@ -982,101 +720,56 @@ class _DamageReportDialogState extends ConsumerState<_DamageReportDialog> {
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
         child: Column(
           children: [
-            // En-tête
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.car_crash, color: Colors.white),
                   const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Gestion des dommages',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                  const Expanded(child: Text('Gestion des dommages', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),
 
-            // Liste des dommages existants
             Expanded(
               child: damageState.damages.isEmpty
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.info_outline,
-                              size: 60, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Aucun dommage déclaré',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.info_outline, size: 60, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text('Aucun dommage declare', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  ],
+                ),
+              )
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: damageState.damages.length,
-                      itemBuilder: (ctx, idx) {
-                        final damage = damageState.damages[idx];
-                        return _buildDamageCard(damage);
-                      },
-                    ),
+                padding: const EdgeInsets.all(16),
+                itemCount: damageState.damages.length,
+                itemBuilder: (ctx, idx) => _buildDamageCard(damageState.damages[idx]),
+              ),
             ),
 
-            // Formulaire d'ajout
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                border: Border(top: BorderSide(color: Colors.grey[300]!)),
-              ),
+              decoration: BoxDecoration(color: Colors.grey[50], border: Border(top: BorderSide(color: Colors.grey[300]!))),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Ajouter un dommage',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+                  const Text('Ajouter un dommage', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<DamageZone>(
                           value: _zone,
-                          decoration: const InputDecoration(
-                            labelText: 'Zone',
-                            isDense: true,
-                          ),
-                          items: DamageZone.values
-                              .map((z) => DropdownMenuItem(
-                                    value: z,
-                                    child: Text(z.label, style: const TextStyle(fontSize: 13)),
-                                  ))
-                              .toList(),
+                          decoration: const InputDecoration(labelText: 'Zone', isDense: true),
+                          items: DamageZone.values.map((z) => DropdownMenuItem(value: z, child: Text(z.label, style: const TextStyle(fontSize: 13)))).toList(),
                           onChanged: (val) => setState(() => _zone = val!),
                         ),
                       ),
@@ -1084,16 +777,8 @@ class _DamageReportDialogState extends ConsumerState<_DamageReportDialog> {
                       Expanded(
                         child: DropdownButtonFormField<DamageType>(
                           value: _type,
-                          decoration: const InputDecoration(
-                            labelText: 'Type',
-                            isDense: true,
-                          ),
-                          items: DamageType.values
-                              .map((t) => DropdownMenuItem(
-                                    value: t,
-                                    child: Text(t.label, style: const TextStyle(fontSize: 13)),
-                                  ))
-                              .toList(),
+                          decoration: const InputDecoration(labelText: 'Type', isDense: true),
+                          items: DamageType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: const TextStyle(fontSize: 13)))).toList(),
                           onChanged: (val) => setState(() => _type = val!),
                         ),
                       ),
@@ -1105,23 +790,15 @@ class _DamageReportDialogState extends ConsumerState<_DamageReportDialog> {
                       Expanded(
                         child: DropdownButtonFormField<DamageSeverity>(
                           value: _severity,
-                          decoration: const InputDecoration(
-                            labelText: 'Gravité',
-                            isDense: true,
-                          ),
-                          items: DamageSeverity.values
-                              .map((s) => DropdownMenuItem(
-                                    value: s,
-                                    child: Text(s.label, style: const TextStyle(fontSize: 13)),
-                                  ))
-                              .toList(),
+                          decoration: const InputDecoration(labelText: 'Gravite', isDense: true),
+                          items: DamageSeverity.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label, style: const TextStyle(fontSize: 13)))).toList(),
                           onChanged: (val) => setState(() => _severity = val!),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: SwitchListTile(
-                          title: const Text('Réparé', style: TextStyle(fontSize: 13)),
+                          title: const Text('Repare', style: TextStyle(fontSize: 13)),
                           value: _isRepaired,
                           onChanged: (val) => setState(() => _isRepaired = val),
                           contentPadding: EdgeInsets.zero,
@@ -1144,20 +821,11 @@ class _DamageReportDialogState extends ConsumerState<_DamageReportDialog> {
                           reportedAt: DateTime.now(),
                         );
                         ref.read(damageReportProvider.notifier).addDamage(damage);
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✓ Dommage ajouté'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dommage ajoute'), duration: Duration(seconds: 1)));
                       },
                       icon: const Icon(Icons.add),
                       label: const Text('Ajouter'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
                     ),
                   ),
                 ],
@@ -1175,32 +843,14 @@ class _DamageReportDialogState extends ConsumerState<_DamageReportDialog> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: severityColor,
-          child: Icon(
-            _getSeverityIcon(damage.severity),
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          '${damage.zone.label} - ${damage.type.label}',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        subtitle: Text(
-          '${damage.severity.label}${damage.isRepaired ? ' (Réparé)' : ''}',
-          style: const TextStyle(fontSize: 12),
-        ),
+        leading: CircleAvatar(backgroundColor: severityColor, child: Icon(_getSeverityIcon(damage.severity), color: Colors.white, size: 20)),
+        title: Text('${damage.zone.label} - ${damage.type.label}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: Text('${damage.severity.label}${damage.isRepaired ? ' (Repare)' : ''}', style: const TextStyle(fontSize: 12)),
         trailing: IconButton(
           icon: const Icon(Icons.delete, color: Colors.red, size: 20),
           onPressed: () {
             ref.read(damageReportProvider.notifier).removeDamage(damage.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✓ Dommage supprimé'),
-                duration: Duration(seconds: 1),
-              ),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dommage supprime'), duration: Duration(seconds: 1)));
           },
         ),
       ),
@@ -1209,23 +859,17 @@ class _DamageReportDialogState extends ConsumerState<_DamageReportDialog> {
 
   Color _getSeverityColor(DamageSeverity severity) {
     switch (severity) {
-      case DamageSeverity.light:
-        return Colors.green;
-      case DamageSeverity.medium:
-        return Colors.orange;
-      case DamageSeverity.severe:
-        return Colors.red;
+      case DamageSeverity.light: return Colors.green;
+      case DamageSeverity.medium: return Colors.orange;
+      case DamageSeverity.severe: return Colors.red;
     }
   }
 
   IconData _getSeverityIcon(DamageSeverity severity) {
     switch (severity) {
-      case DamageSeverity.light:
-        return Icons.info_outline;
-      case DamageSeverity.medium:
-        return Icons.warning_amber;
-      case DamageSeverity.severe:
-        return Icons.error;
+      case DamageSeverity.light: return Icons.info_outline;
+      case DamageSeverity.medium: return Icons.warning_amber;
+      case DamageSeverity.severe: return Icons.error;
     }
   }
 }
