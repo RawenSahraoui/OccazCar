@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // 🎨 COULEURS LIGHT MODE
+  //  COULEURS LIGHT MODE
   static const Color primaryColor = Color(0xFF0A1931);
   static const Color secondaryColor = Color(0xFFD4AF37);
   static const Color accentColor = Color(0xFFE63946);
@@ -16,7 +16,7 @@ class AppTheme {
   static const Color borderColor = Color(0xFFE8EAED);
   static const Color dividerColor = Color(0xFFF1F3F5);
 
-  // 🌙 COULEURS DARK MODE
+  //  COULEURS DARK MODE
   static const Color darkBackground = Color(0xFF0F1419);
   static const Color darkSurface = Color(0xFF1A1F2E);
   static const Color darkSurfaceVariant = Color(0xFF252B3B);
@@ -61,7 +61,7 @@ class AppTheme {
     ),
   ];
 
-  // 🌞 LIGHT THEME
+  //  LIGHT THEME
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
@@ -159,7 +159,7 @@ class AppTheme {
     dividerTheme: const DividerThemeData(color: dividerColor, thickness: 1, space: 1),
   );
 
-  // 🌙 DARK THEME
+  //  DARK THEME
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,

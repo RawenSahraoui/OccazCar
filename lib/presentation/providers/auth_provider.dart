@@ -12,11 +12,11 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return repository.authStateChanges;
 });
 
-// SIMPLE ET EFFICACE - PAS DE autoDispose
+
 final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   final authState = ref.watch(authStateProvider);
 
-  // Si pas d'utilisateur authentifié, retourner null immédiatement
+
   if (authState.value == null) {
     return null;
   }

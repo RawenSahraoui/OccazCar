@@ -71,7 +71,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🖼️ IMAGE AVEC BADGES
+              // IMAGE AVEC BADGES
               Stack(
                 children: [
                   // Image principale
@@ -121,7 +121,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                     ),
                   ),
 
-                  // Badge condition (haut gauche)
+                  // Badge condition
                   Positioned(
                     top: 12,
                     left: 12,
@@ -153,7 +153,6 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                     ),
                   ),
 
-                  // Bouton favori (haut droit) - FONCTIONNEL
                   Positioned(
                     top: 8,
                     right: 8,
@@ -240,7 +239,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                 ],
               ),
 
-              // 📝 INFORMATIONS
+              // INFORMATIONS
               Padding(
                 padding: const EdgeInsets.all(14),
                 child: Column(

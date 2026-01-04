@@ -16,7 +16,7 @@ class StorageService {
       final String fileName = '${_uuid.v4()}.jpg';
       final String path = 'vehicles/$vehicleId/$fileName';
 
-      print('📤 Upload image: $path');
+      print(' Upload image: $path');
 
       final Reference ref = _storage.ref().child(path);
 
@@ -31,7 +31,7 @@ class StorageService {
         uploadTask = ref.putFile(File(imageFile.path));
       }
 
-      // ✅ AJOUT: Attendre avec timeout de 60 secondes
+      // Attendre avec timeout de 60 secondes
       final TaskSnapshot snapshot = await uploadTask.timeout(
         const Duration(seconds: 60),
         onTimeout: () {
@@ -39,20 +39,20 @@ class StorageService {
         },
       );
 
-      // ✅ Vérifier l'état
+      //  Vérifier l'état
       if (snapshot.state != TaskState.success) {
         throw Exception('Upload échoué: ${snapshot.state}');
       }
 
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
-      print('✅ Image uploadee: $downloadUrl');
+      print(' Image uploadee: $downloadUrl');
       return downloadUrl;
     } on FirebaseException catch (e) {
-      print('❌ Firebase Error: ${e.code} - ${e.message}');
+      print(' Firebase Error: ${e.code} - ${e.message}');
       throw Exception('Erreur Firebase Storage: ${e.message}');
     } catch (e) {
-      print('❌ Erreur upload image: $e');
+      print(' Erreur upload image: $e');
       throw Exception('Erreur lors de l\'upload: $e');
     }
   }
@@ -62,11 +62,11 @@ class StorageService {
     required List<XFile> imageFiles,
   }) async {
     try {
-      print('📤 Upload de ${imageFiles.length} images pour vehicule $vehicleId');
+      print(' Upload de ${imageFiles.length} images pour vehicule $vehicleId');
       final List<String> downloadUrls = [];
 
       for (int i = 0; i < imageFiles.length; i++) {
-        print('📤 Upload image ${i + 1}/${imageFiles.length}');
+        print(' Upload image ${i + 1}/${imageFiles.length}');
 
         try {
           final url = await uploadVehicleImage(
@@ -74,9 +74,9 @@ class StorageService {
             imageFile: imageFiles[i],
           );
           downloadUrls.add(url);
-          print('✅ Image ${i + 1} uploadee: $url');
+          print(' Image ${i + 1} uploadee: $url');
         } catch (e) {
-          print('⚠️ Erreur image ${i + 1}, on continue...');
+          print(' Erreur image ${i + 1}, on continue...');
           // Continue avec les autres images même si une échoue
         }
       }
@@ -85,10 +85,10 @@ class StorageService {
         throw Exception('Aucune image n\'a pu être uploadée');
       }
 
-      print('✅ TOTAL: ${downloadUrls.length} images uploadees');
+      print(' TOTAL: ${downloadUrls.length} images uploadees');
       return downloadUrls;
     } catch (e) {
-      print('❌ Erreur upload images: $e');
+      print(' Erreur upload images: $e');
       throw Exception('Erreur lors de l\'upload des images: $e');
     }
   }

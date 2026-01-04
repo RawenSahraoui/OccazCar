@@ -15,28 +15,28 @@ class VehicleRepository {
     required List<XFile> images,
   }) async {
     try {
-      print('🚀 Début création véhicule');
+      print(' Début création véhicule');
 
       // 1. Créer le véhicule d'abord (Firebase Firestore)
       final vehicleId = await _firestoreService.createVehicle(vehicle);
-      print('✅ Véhicule créé dans Firestore: $vehicleId');
+      print(' Véhicule créé dans Firestore: $vehicleId');
 
       // 2. Upload des images (Cloudinary)
       List<String> imageUrls = [];
       if (images.isNotEmpty) {
-        print('📤 Upload vers Cloudinary...');
+        print(' Upload vers Cloudinary...');
         imageUrls = await _cloudinaryService.uploadVehicleImages(  // ← CHANGÉ
           vehicleId: vehicleId,
           imageFiles: images,
         );
-        print('✅ ${imageUrls.length} images uploadées sur Cloudinary');
+        print(' ${imageUrls.length} images uploadées sur Cloudinary');
 
         // 3. Mettre à jour Firestore avec les URLs Cloudinary
         await _firestoreService.updateVehicle(vehicleId, {
           'imageUrls': imageUrls,
           'thumbnailUrl': imageUrls.isNotEmpty ? imageUrls.first : null,
         });
-        print('✅ URLs sauvegardées dans Firestore');
+        print(' URLs sauvegardées dans Firestore');
       }
 
       // 4. Véhicule complet
@@ -47,13 +47,13 @@ class VehicleRepository {
       );
 
       // 5. Vérifier les alertes
-      print('🔔 Vérification des alertes...');
+      print(' Vérification des alertes...');
       await _alertChecker.checkAlertsForVehicle(updatedVehicle);
-      print('✅ Alertes vérifiées');
+      print(' Alertes vérifiées');
 
       return Result.success(vehicleId);
     } catch (e) {
-      print('❌ Erreur: $e');
+      print(' Erreur: $e');
       return Result.failure('Erreur lors de la création: $e');
     }
   }

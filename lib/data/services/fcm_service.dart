@@ -43,9 +43,9 @@ class FCMService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('✅ Permission accordée');
+      print(' Permission accordée');
     } else {
-      print('❌ Permission refusée');
+      print(' Permission refusée');
     }
   }
 

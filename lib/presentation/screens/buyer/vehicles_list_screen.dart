@@ -39,7 +39,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 🎯 HEADER AVEC LOGO ET TITRE
+            // HEADER AVEC LOGO ET TITRE
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
               decoration: BoxDecoration(
@@ -96,7 +96,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 🔍 BARRE DE RECHERCHE
+                  //  BARRE DE RECHERCHE
                   Row(
                     children: [
                       Expanded(
@@ -187,7 +187,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
               ),
             ),
 
-            // 🎨 FILTRES CONDITIONS (CHIPS HORIZONTAUX)
+            //  FILTRES CONDITIONS (CHIPS HORIZONTAUX)
             Container(
               margin: const EdgeInsets.symmetric(vertical: 12),
               height: 40,
@@ -208,7 +208,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
               ),
             ),
 
-            // 📱 LISTE DES VÉHICULES
+            //  LISTE DES VÉHICULES
             Expanded(
               child: vehiclesAsync.when(
                 data: (vehicles) {
@@ -232,7 +232,6 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                         return VehicleCard(
                           vehicle: vehicle,
                           onTap: () {
-                            // ✅ NAVIGATION CORRIGÉE
                             Navigator.push(
                               context,
                               MaterialPageRoute(

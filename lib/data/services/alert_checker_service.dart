@@ -211,7 +211,7 @@ class AlertCheckerService {
         print('Aucune alerte ne correspond aux critères du véhicule');
       }
 
-      print('🔔 === FIN VÉRIFICATION ===\n');
+      print(' FIN VÉRIFICATION \n');
     } catch (e) {
       print(' ERREUR CRITIQUE dans checkAlertsForVehicle: $e');
       print('Stack trace: ${StackTrace.current}');

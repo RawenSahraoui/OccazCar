@@ -6,7 +6,7 @@ import '../models/conversation_model.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ============ VÉHICULES ============
+  //  VÉHICULES
 
   // Créer un véhicule
   Future<String> createVehicle(VehicleModel vehicle) async {
@@ -52,9 +52,7 @@ class FirestoreService {
       // Autres filtres
       if (brand != null) query = query.where('brand', isEqualTo: brand);
       if (city != null) query = query.where('city', isEqualTo: city);
-      
-      // NE PAS utiliser orderBy pour éviter le besoin d'index
-      // On va trier en mémoire à la place
+
 
       return query.snapshots().map((snapshot) {
         // Récupérer tous les véhicules
@@ -169,7 +167,7 @@ class FirestoreService {
     }
   }
 
-  // ============ CONVERSATIONS ============
+  //  CONVERSATIONS
 
   // Créer ou récupérer une conversation
   Future<String> createOrGetConversation({
@@ -248,7 +246,7 @@ class FirestoreService {
     }
   }
 
-  // ============ MESSAGES ============
+  //  MESSAGES
 
   // Envoyer un message
   Future<void> sendMessage(MessageModel message) async {
