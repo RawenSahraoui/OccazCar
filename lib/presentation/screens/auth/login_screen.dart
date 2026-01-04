@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
-import 'register_screen.dart';
-import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -31,9 +29,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Vérifier si le widget est monté avant setState
     if (!mounted) return;
-
     setState(() => _isLoading = true);
 
     final success = await ref.read(signInProvider.notifier).signIn(
@@ -41,18 +37,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       password: _passwordController.text,
     );
 
-    // IMPORTANT: Vérifier mounted avant setState
     if (!mounted) return;
-
     setState(() => _isLoading = false);
 
     if (success) {
       if (mounted) {
-        // Navigation avec go_router
+        // PAS DE DÉLAI - Navigation immédiate
         context.go('/home');
       }
     } else {
-      // Afficher l'erreur
       final error = ref.read(signInProvider).error;
       if (mounted && error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +78,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo avec gradient
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -107,8 +99,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Titre
                   Text(
                     'OccazCar',
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
@@ -118,16 +108,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-
-                  // Sous-titre
                   Text(
                     'Votre marketplace automobile',
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
-
-                  // Champ Email
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -142,8 +128,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     enabled: !_isLoading,
                   ),
                   const SizedBox(height: 16),
-
-                  // Champ Mot de passe
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -169,28 +153,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     validator: Validators.validatePassword,
                     enabled: !_isLoading,
                   ),
-                  const SizedBox(height: 8),
-
-                  // Mot de passe oublié
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ForgotPasswordScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text('Mot de passe oublié ?'),
-                    ),
-                  ),
                   const SizedBox(height: 24),
-
-                  // Bouton Connexion
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
@@ -217,8 +180,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Séparateur
                   Row(
                     children: [
                       Expanded(
@@ -231,9 +192,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           'OU',
                           style: TextStyle(
-                            color: isDark
-                                ? AppTheme.darkTextSecondary
-                                : AppTheme.textSecondary,
+                            color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -246,8 +205,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Bouton Inscription
                   OutlinedButton(
                     onPressed: _isLoading
                         ? null

@@ -57,6 +57,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     if (success) {
       if (mounted) {
+        // PAS DE DÉLAI - Navigation immédiate
         context.go('/home');
       }
     } else {
@@ -94,7 +95,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Icône
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -116,8 +116,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Type d'utilisateur
                 Text(
                   'Je suis :',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -173,8 +171,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 24),
-
-                // Nom complet
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
@@ -188,8 +184,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: 16),
-
-                // Email
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -204,8 +198,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: 16),
-
-                // Téléphone (optionnel)
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
@@ -221,8 +213,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: 16),
-
-                // Mot de passe
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -249,8 +239,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: 16),
-
-                // Confirmation mot de passe
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
@@ -268,8 +256,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       onPressed: () {
                         if (mounted) {
-                          setState(() =>
-                          _obscureConfirmPassword = !_obscureConfirmPassword);
+                          setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
                         }
                       },
                     ),
@@ -281,8 +268,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: 32),
-
-                // Bouton S'inscrire
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
@@ -309,8 +294,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Lien vers connexion
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

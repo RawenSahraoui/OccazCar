@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/vehicle_model.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../widgets/common/vehicle_card.dart';
+import 'vehicle_detail_screen.dart';  // ← AJOUTÉ
 
 class VehiclesListScreen extends ConsumerStatefulWidget {
   const VehiclesListScreen({Key? key}) : super(key: key);
@@ -32,9 +32,10 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
   @override
   Widget build(BuildContext context) {
     final vehiclesAsync = ref.watch(availableVehiclesProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;  // ← AJOUTÉ
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.backgroundColor,  // ← MODIFIÉ
       body: SafeArea(
         child: Column(
           children: [
@@ -42,10 +43,10 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: isDark ? AppTheme.darkSurface : AppTheme.surfaceColor,  // ← MODIFIÉ
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.05),
+                    color: (isDark ? Colors.black : AppTheme.primaryColor).withOpacity(0.05),  // ← MODIFIÉ
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -61,7 +62,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          gradient: AppTheme.premiumGradient,
+                          gradient: isDark ? AppTheme.goldGradient : AppTheme.premiumGradient,  // ← MODIFIÉ
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -79,13 +80,13 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                               'OccazCar',
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.primaryColor,
+                                color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,  // ← MODIFIÉ
                               ),
                             ),
                             Text(
                               'Trouvez votre voiture idéale',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.textSecondary,
+                                color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,  // ← MODIFIÉ
                               ),
                             ),
                           ],
@@ -102,12 +103,12 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                         child: Container(
                           height: 48,
                           decoration: BoxDecoration(
-                            color: AppTheme.backgroundColor,
+                            color: isDark ? AppTheme.darkSurfaceVariant : AppTheme.backgroundColor,  // ← MODIFIÉ
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: _searchQuery.isNotEmpty
-                                  ? AppTheme.primaryColor
-                                  : AppTheme.borderColor,
+                                  ? (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor)  // ← MODIFIÉ
+                                  : (isDark ? AppTheme.darkBorder : AppTheme.borderColor),  // ← MODIFIÉ
                               width: _searchQuery.isNotEmpty ? 1.5 : 1,
                             ),
                           ),
@@ -121,21 +122,21 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                             decoration: InputDecoration(
                               hintText: 'Marque, modèle, ville...',
                               hintStyle: TextStyle(
-                                color: AppTheme.textTertiary,
+                                color: isDark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,  // ← MODIFIÉ
                                 fontSize: 14,
                               ),
                               prefixIcon: Icon(
                                 Icons.search_rounded,
                                 color: _searchQuery.isNotEmpty
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.textTertiary,
+                                    ? (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor)  // ← MODIFIÉ
+                                    : (isDark ? AppTheme.darkTextTertiary : AppTheme.textTertiary),  // ← MODIFIÉ
                                 size: 22,
                               ),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
                                 icon: Icon(
                                   Icons.clear_rounded,
-                                  color: AppTheme.textTertiary,
+                                  color: isDark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,  // ← MODIFIÉ
                                   size: 20,
                                 ),
                                 onPressed: () {
@@ -161,11 +162,11 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          gradient: AppTheme.premiumGradient,
+                          gradient: isDark ? AppTheme.goldGradient : AppTheme.premiumGradient,  // ← MODIFIÉ
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryColor.withOpacity(0.3),
+                              color: (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor).withOpacity(0.3),  // ← MODIFIÉ
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -194,15 +195,15 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  _buildConditionChip('Tous', null),
+                  _buildConditionChip('Tous', null, isDark),
                   const SizedBox(width: 8),
-                  _buildConditionChip('Excellent', 'excellent'),
+                  _buildConditionChip('Excellent', 'excellent', isDark),
                   const SizedBox(width: 8),
-                  _buildConditionChip('Bon état', 'good'),
+                  _buildConditionChip('Bon état', 'good', isDark),
                   const SizedBox(width: 8),
-                  _buildConditionChip('Moyen', 'fair'),
+                  _buildConditionChip('Moyen', 'fair', isDark),
                   const SizedBox(width: 8),
-                  _buildConditionChip('À rénover', 'poor'),
+                  _buildConditionChip('À rénover', 'poor', isDark),
                 ],
               ),
             ),
@@ -214,14 +215,14 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                   final filteredVehicles = _filterVehicles(vehicles);
 
                   if (filteredVehicles.isEmpty) {
-                    return _buildEmptyState(vehicles.length);
+                    return _buildEmptyState(vehicles.length, isDark);
                   }
 
                   return RefreshIndicator(
                     onRefresh: () async {
                       ref.invalidate(availableVehiclesProvider);
                     },
-                    color: AppTheme.primaryColor,
+                    color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,  // ← MODIFIÉ
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                       itemCount: filteredVehicles.length,
@@ -231,15 +232,23 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                         return VehicleCard(
                           vehicle: vehicle,
                           onTap: () {
-                            context.push('/vehicle/${vehicle.id}');
+                            // ✅ NAVIGATION CORRIGÉE
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => VehicleDetailScreen(
+                                  vehicleId: vehicle.id,
+                                ),
+                              ),
+                            );
                           },
                         );
                       },
                     ),
                   );
                 },
-                loading: () => _buildLoadingState(),
-                error: (error, stack) => _buildErrorState(error.toString()),
+                loading: () => _buildLoadingState(isDark),
+                error: (error, stack) => _buildErrorState(error.toString(), isDark),
               ),
             ),
           ],
@@ -248,7 +257,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
     );
   }
 
-  Widget _buildConditionChip(String label, String? value) {
+  Widget _buildConditionChip(String label, String? value, bool isDark) {
     final isSelected = value == _selectedCondition ||
         (value == null && _selectedCondition == null);
 
@@ -262,16 +271,20 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : AppTheme.surfaceColor,
+          color: isSelected
+              ? (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor)
+              : (isDark ? AppTheme.darkSurface : AppTheme.surfaceColor),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            color: isSelected
+                ? (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor)
+                : (isDark ? AppTheme.darkBorder : AppTheme.borderColor),
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
               ? [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.2),
+              color: (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor).withOpacity(0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -283,14 +296,16 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppTheme.textSecondary,
+            color: isSelected
+                ? (isDark ? AppTheme.darkBackground : Colors.white)
+                : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(int totalVehicles) {
+  Widget _buildEmptyState(int totalVehicles, bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -301,13 +316,13 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppTheme.backgroundColor,
+                color: isDark ? AppTheme.darkSurfaceVariant : AppTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 Icons.search_off_rounded,
                 size: 60,
-                color: AppTheme.textTertiary,
+                color: isDark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,
               ),
             ),
             const SizedBox(height: 24),
@@ -342,7 +357,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -351,7 +366,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
+              gradient: isDark ? AppTheme.goldGradient : AppTheme.premiumGradient,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Padding(
@@ -366,7 +381,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
           Text(
             'Chargement des véhicules...',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
             ),
           ),
         ],
@@ -374,7 +389,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState(String error, bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -388,7 +403,7 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                 color: AppTheme.accentColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.error_outline_rounded,
                 size: 60,
                 color: AppTheme.accentColor,
@@ -421,7 +436,6 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
 
   List<VehicleModel> _filterVehicles(List<VehicleModel> vehicles) {
     return vehicles.where((vehicle) {
-      // Recherche
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         if (!vehicle.brand.toLowerCase().contains(query) &&
@@ -431,17 +445,14 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
         }
       }
 
-      // Condition
       if (_selectedCondition != null &&
           vehicle.condition.name != _selectedCondition) {
         return false;
       }
 
-      // Prix
       if (_minPrice != null && vehicle.price < _minPrice!) return false;
       if (_maxPrice != null && vehicle.price > _maxPrice!) return false;
 
-      // Année
       if (_minYear != null && vehicle.year < _minYear!) return false;
       if (_maxYear != null && vehicle.year > _maxYear!) return false;
 
@@ -450,14 +461,16 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
   }
 
   void _showFilterDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurface : AppTheme.surfaceColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
@@ -471,31 +484,28 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
               Center(
                 child: Container(
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppTheme.borderColor,
+                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Titre
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: (isDark ? AppTheme.secondaryColor : AppTheme.primaryColor).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.filter_alt_rounded,
-                      color: AppTheme.primaryColor,
+                      color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
                       size: 24,
                     ),
                   ),
@@ -520,8 +530,6 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Prix
               Text(
                 'Fourchette de prix (TND)',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -557,8 +565,6 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Année
               Text(
                 'Année de fabrication',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -594,8 +600,6 @@ class _VehiclesListScreenState extends ConsumerState<VehiclesListScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-
-              // Bouton Appliquer
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

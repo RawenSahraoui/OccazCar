@@ -3,25 +3,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
-// Repository provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
 
-// Stream du statut d'authentification
 final authStateProvider = StreamProvider<User?>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return repository.authStateChanges;
 });
 
-// Provider de l'utilisateur actuel
+// SIMPLE ET EFFICACE - PAS DE autoDispose
 final currentUserProvider = FutureProvider<UserModel?>((ref) async {
+  final authState = ref.watch(authStateProvider);
+
+  // Si pas d'utilisateur authentifié, retourner null immédiatement
+  if (authState.value == null) {
+    return null;
+  }
+
   final repository = ref.watch(authRepositoryProvider);
   final result = await repository.getCurrentUserData();
   return result.isSuccess ? result.data : null;
 });
 
-// Provider pour l'inscription
 final signUpProvider = StateNotifierProvider<SignUpNotifier, AsyncValue<void>>((ref) {
   return SignUpNotifier(ref.watch(authRepositoryProvider));
 });
@@ -58,7 +62,6 @@ class SignUpNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-// Provider pour la connexion
 final signInProvider = StateNotifierProvider<SignInNotifier, AsyncValue<void>>((ref) {
   return SignInNotifier(ref.watch(authRepositoryProvider));
 });
@@ -89,7 +92,6 @@ class SignInNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-// Provider pour la déconnexion
 final signOutProvider = Provider<Future<void> Function()>((ref) {
   return () async {
     final repository = ref.read(authRepositoryProvider);
@@ -97,7 +99,6 @@ final signOutProvider = Provider<Future<void> Function()>((ref) {
   };
 });
 
-// Provider pour la réinitialisation du mot de passe
 final resetPasswordProvider = StateNotifierProvider<ResetPasswordNotifier, AsyncValue<void>>((ref) {
   return ResetPasswordNotifier(ref.watch(authRepositoryProvider));
 });
@@ -122,7 +123,6 @@ class ResetPasswordNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-// Provider pour mettre à jour le profil
 final updateProfileProvider = StateNotifierProvider<UpdateProfileNotifier, AsyncValue<void>>((ref) {
   return UpdateProfileNotifier(ref.watch(authRepositoryProvider));
 });
