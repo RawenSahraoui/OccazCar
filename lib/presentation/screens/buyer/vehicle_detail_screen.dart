@@ -7,6 +7,7 @@ import '../../../data/models/vehicle_model.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/favorites_provider.dart';
 import '../seller/seller_profile_screen.dart';
 
 class VehicleDetailScreen extends ConsumerStatefulWidget {
@@ -48,7 +49,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             children: [
               CustomScrollView(
                 slivers: [
-                  // 🖼️ HEADER IMAGES
                   SliverAppBar(
                     expandedHeight: 320,
                     pinned: true,
@@ -73,23 +73,102 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                       ),
                     ),
                     actions: [
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final isFavoriteAsync = ref.watch(isFavoriteProvider(widget.vehicleId));
+
+                          return isFavoriteAsync.when(
+                            data: (isFavorite) => Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                ),
+                                color: isFavorite
+                                    ? AppTheme.accentColor
+                                    : AppTheme.textSecondary,
+                                onPressed: () async {
+                                  final user = await ref.read(currentUserProvider.future);
+                                  if (user == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Connectez-vous pour ajouter aux favoris'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  await ref.read(favoritesNotifierProvider).toggleFavorite(widget.vehicleId);
+
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isFavorite
+                                              ? 'Retire des favoris'
+                                              : 'Ajoute aux favoris',
+                                        ),
+                                        backgroundColor: isFavorite
+                                            ? Colors.orange
+                                            : AppTheme.successColor,
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.favorite_border_rounded),
-                          color: AppTheme.accentColor,
-                          onPressed: () {},
-                        ),
+                            loading: () => Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.favorite_border_rounded),
+                                color: AppTheme.textSecondary,
+                                onPressed: () {},
+                              ),
+                            ),
+                            error: (_, __) => Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.favorite_border_rounded),
+                                color: AppTheme.textSecondary,
+                                onPressed: () {},
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       Container(
                         margin: const EdgeInsets.all(8),
@@ -143,7 +222,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           else
                             _buildImagePlaceholder(),
 
-                          // Indicateur de pages
                           if (vehicle.imageUrls.length > 1)
                             Positioned(
                               bottom: 20,
@@ -186,12 +264,10 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                     ),
                   ),
 
-                  // 📝 CONTENU
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // En-tête avec prix
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -206,7 +282,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Badge condition
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
@@ -228,7 +303,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               ),
                               const SizedBox(height: 12),
 
-                              // Titre
                               Text(
                                 '${vehicle.brand} ${vehicle.model}',
                                 style: Theme.of(context)
@@ -241,7 +315,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Prix
                               Row(
                                 children: [
                                   Container(
@@ -279,12 +352,10 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
 
                         const SizedBox(height: 8),
 
-                        // Caractéristiques principales
                         _buildSpecsSection(vehicle, numberFormat),
 
                         const SizedBox(height: 8),
 
-                        // Description
                         _buildSection(
                           'Description',
                           Icons.description_rounded,
@@ -297,10 +368,9 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           ),
                         ),
 
-                        // Équipements
                         if (vehicle.features.isNotEmpty)
                           _buildSection(
-                            'Équipements & Options',
+                            'Equipements & Options',
                             Icons.star_rounded,
                             child: Wrap(
                               spacing: 8,
@@ -341,7 +411,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
 
-                        // Alerte accidents
                         if (vehicle.hasAccidents)
                           Container(
                             margin: const EdgeInsets.all(16),
@@ -384,7 +453,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                                       const SizedBox(height: 4),
                                       Text(
                                         vehicle.accidentHistory ??
-                                            'Ce véhicule a eu des accidents',
+                                            'Ce vehicule a eu des accidents',
                                         style: TextStyle(
                                           color: AppTheme.textSecondary,
                                           fontSize: 12,
@@ -397,7 +466,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                             ),
                           ),
 
-                        // Localisation
                         _buildSection(
                           'Localisation',
                           Icons.location_on_rounded,
@@ -449,7 +517,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           ),
                         ),
 
-                        // Vendeur
                         _buildSection(
                           'Vendeur',
                           Icons.person_rounded,
@@ -522,7 +589,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                           ),
                         ),
 
-                        // Info publication
                         Container(
                           margin: const EdgeInsets.all(16),
                           padding: const EdgeInsets.all(14),
@@ -557,7 +623,6 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                 ],
               ),
 
-              // Bottom bar
               Positioned(
                 left: 0,
                 right: 0,
@@ -603,7 +668,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                 Icon(Icons.info_outline_rounded, size: 20, color: AppTheme.primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  'Caractéristiques techniques',
+                  'Caracteristiques techniques',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -616,9 +681,9 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildSpecRow('Année', vehicle.year.toString(), Icons.calendar_today_rounded),
+                _buildSpecRow('Annee', vehicle.year.toString(), Icons.calendar_today_rounded),
                 const SizedBox(height: 12),
-                _buildSpecRow('Kilométrage', '${numberFormat.format(vehicle.mileage)} km', Icons.speed_rounded),
+                _buildSpecRow('Kilometrage', '${numberFormat.format(vehicle.mileage)} km', Icons.speed_rounded),
                 const SizedBox(height: 12),
                 _buildSpecRow('Carburant', _getFuelTypeLabel(vehicle.fuelType), Icons.local_gas_station_rounded),
                 const SizedBox(height: 12),
@@ -633,8 +698,8 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
                 ],
                 const SizedBox(height: 12),
                 _buildSpecRow(
-                  'Propriétaires',
-                  vehicle.numberOfOwners == 1 ? '1er propriétaire' : '${vehicle.numberOfOwners} propriétaires',
+                  'Proprietaires',
+                  vehicle.numberOfOwners == 1 ? '1er proprietaire' : '${vehicle.numberOfOwners} proprietaires',
                   Icons.person_outline_rounded,
                 ),
               ],
@@ -807,7 +872,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Appel - À venir')),
+                const SnackBar(content: Text('Appel - A venir')),
               );
             },
             child: const Text('Appeler'),
@@ -820,7 +885,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
   Future<void> _handleMessage(VehicleModel vehicle) async {
     final user = await ref.read(currentUserProvider.future);
     if (user == null) {
-      _showSnackBar('Vous devez être connecté', AppTheme.accentColor);
+      _showSnackBar('Vous devez etre connecte', AppTheme.accentColor);
       return;
     }
     if (user.uid == vehicle.sellerId) {
@@ -845,7 +910,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
       if (mounted) {
         Navigator.pop(context);
         if (conversationId != null) {
-          _showSnackBar('Conversation créée !', AppTheme.successColor);
+          _showSnackBar('Conversation creee !', AppTheme.successColor);
         } else {
           _showSnackBar('Erreur', AppTheme.accentColor);
         }
@@ -871,7 +936,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
         children: [
           Icon(Icons.car_crash_rounded, size: 80, color: AppTheme.textTertiary),
           const SizedBox(height: 16),
-          const Text('Véhicule non trouvé'),
+          const Text('Vehicule non trouve'),
         ],
       ),
     );
@@ -904,9 +969,9 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
   String _getConditionLabel(VehicleCondition condition) {
     switch (condition) {
       case VehicleCondition.excellent: return 'EXCELLENT';
-      case VehicleCondition.good: return 'BON ÉTAT';
+      case VehicleCondition.good: return 'BON ETAT';
       case VehicleCondition.fair: return 'MOYEN';
-      case VehicleCondition.poor: return 'À RÉNOVER';
+      case VehicleCondition.poor: return 'A RENOVER';
     }
   }
 
@@ -914,7 +979,7 @@ class _VehicleDetailScreenState extends ConsumerState<VehicleDetailScreen> {
     switch (type) {
       case FuelType.gasoline: return 'Essence';
       case FuelType.diesel: return 'Diesel';
-      case FuelType.electric: return 'Électrique';
+      case FuelType.electric: return 'Electrique';
       case FuelType.hybrid: return 'Hybride';
       case FuelType.other: return 'Autre';
     }
