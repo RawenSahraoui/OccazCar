@@ -6,11 +6,12 @@ version: 1.0.0+1
 environment:
   sdk: '>=3.4.0 <4.0.0'
 
-dependencies:
+dependencies: 
   flutter:
     sdk: flutter
   url_launcher: ^6.2.2
   shared_preferences: ^2.2.2
+  image: ^4.0.17
   
   # Firebase
   firebase_core: ^3.6.0

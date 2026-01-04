@@ -8,11 +8,11 @@ import '../../../data/models/vehicle_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../providers/ai_description_provider.dart';
-// 🔥 AJOUTEZ CES IMPORTS
 import '../../providers/damage_report_provider.dart';
 import '../../../data/services/ai_damage_report_service.dart';
 import '../../../data/models/damage_report_models.dart';
 import 'package:uuid/uuid.dart';
+import '../../widgets/ai_image_enhancement_button.dart';
 
 class AddVehicleScreen extends ConsumerStatefulWidget {
   const AddVehicleScreen({super.key});
@@ -857,28 +857,41 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     );
   }
 
-  Widget _buildImagesSection() {
-    return Column(
-      children: [
-        if (_images.isNotEmpty)
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _images.length + 1,
-              itemBuilder: (context, index) {
-                if (index == _images.length) {
-                  return _buildAddImageButton();
-                }
-                return _buildImagePreview(_images[index], index);
-              },
-            ),
-          )
-        else
-          _buildAddImageButton(),
-      ],
-    );
-  }
+ Widget _buildImagesSection() {
+  return Column(
+    children: [
+      if (_images.isNotEmpty)
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _images.length + 1,
+            itemBuilder: (context, index) {
+              if (index == _images.length) {
+                return _buildAddImageButton();
+              }
+              return _buildImagePreview(_images[index], index);
+            },
+          ),
+        )
+      else
+        _buildAddImageButton(),
+
+      if (_images.isNotEmpty)
+        AiImageEnhancementButton(
+          images: _images,
+          onImagesEnhanced: (enhancedImages) {
+            setState(() {
+              _images
+                ..clear()
+                ..addAll(enhancedImages);
+            });
+          },
+        ),
+    ],
+  );
+}
+
 
   Widget _buildAddImageButton() {
     return InkWell(
